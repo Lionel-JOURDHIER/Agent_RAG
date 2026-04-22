@@ -161,7 +161,7 @@ def fetch_chunk_to_csv(
 # Point d'entrée
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     DATE_START = "1900-01-01"
     DATE_END = "2026-12-31"
 
