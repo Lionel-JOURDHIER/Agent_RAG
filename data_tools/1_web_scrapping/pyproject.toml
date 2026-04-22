@@ -4,4 +4,29 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "selenium>=4.18",
+    "beautifulsoup4>=4.12",
+    "dotenv>=0.9.9",
+    "requests>=2.33.1",
+    "pandas>=3.0.2",
+    "polars>=1.40.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-mock>=3.12",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short --cov=src --cov-report=term-missing"
+
+# Marques personnalisées par outil
+markers = [
+    "unit: tests unitaires rapides",
+    "integration: tests avec vrai navigateur",
+    "slow: tests lents à exclure en CI rapide",
+]
