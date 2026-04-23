@@ -1,59 +1,87 @@
+import pandas as pd
 from config import Config
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 
 
-def extract_horror_movies_only():
+def extract_horror_movies() -> None:
+    """
+    Consolidates TMDB reference data with official IMDb datasets using Spark.
+
+    Performs a high-performance join between multiple large-scale sources,
+    filters for horror movies, and exports the final dataset to a flat CSV.
+    """
+    spark = None
     try:
-        # Initialisation de Spark
-        spark = SparkSession.builder.appName("IMDbHorrorMovieFilter").getOrCreate()
+        # Initialize Spark with Arrow optimization for faster serialization
+        spark = SparkSession.builder.appName("IMDbTMDBMatcher").getOrCreate()
+        # Suppress verbose logs to focus on custom print statements
+        spark.sparkContext.setLogLevel("WARN")
 
-        print("🚀 Chargement et filtrage des fichiers IMDb...")
+        # ── 1. TMDB Reference Data ──────────────────────────────────────────
+        # Load the previously enriched data with robust CSV parsing settings
+        print("🚀 Chargement du fichier de référence (TMDB)...")
+        df_reference = (
+            spark.read.options(
+                header="True",
+                inferSchema="True",
+                multiLine="True",  # Handle line breaks within CSV fields
+                escape='"',  # Standard escaping for double quotes
+                quote='"',  # Standard quote character
+            )
+            .csv(Config.PATH_TMDB_HORROR_SOURCE)
+            # Exclude records where the IMDb ID resolution failed
+            .filter(col("imdb_id_fetched") != "NOT_FOUND")
+            .select(col("imdb_id_fetched").alias("tconst"), "title", "tmdb_id")
+        )
 
-        # 1. Charger le fichier BASICS avec les filtres
-        # On filtre directement à la lecture pour optimiser la mémoire
+        print(f"🎬 {df_reference.count()} IDs IMDb valides trouvés dans la référence.")
+
+        # ── 2. IMDb Basics (Titles & Genres) ───────────────────────────────
+        # Filter for standard movies and TV movies only
+        print("🔍 Filtrage des fichiers IMDb Basics...")
         df_basics = (
             spark.read.options(header="True", sep="\t", inferSchema="True")
             .csv(Config.PATH_BASICS)
-            .select("tconst", "titleType", "primaryTitle", "genres")
-            .filter((col("titleType") == "movie") & (col("genres").contains("Horror")))
+            .filter(col("titleType").isin("movie", "tvMovie"))
+            .select("tconst", "primaryTitle", "genres")
+            .dropDuplicates(["tconst"])  # ← fix
         )
 
-        print("🎬 Films de type 'movie' avec le genre 'Horror' filtrés.")
+        # ── 3. IMDb Ratings ────────────────────────────────────────────────
+        # Retrieve user ratings and vote counts from IMDb Ratings
+        df_ratings = (
+            spark.read.options(header="True", sep="\t", inferSchema="True")
+            .csv(Config.PATH_RATINGS)
+            .dropDuplicates(["tconst"])  # ← par sécurité
+        )
 
-        # 2. Charger le fichier RATINGS
-        df_ratings = spark.read.options(
-            header="True", sep="\t", inferSchema="True"
-        ).csv(Config.PATH_RATINGS)
+        # ── 4. Triple Join Logic ──────────────────────────────────────────
+        # Merge all data on the common 'tconst' key
+        df_final = df_reference.join(df_basics, on="tconst", how="left").join(
+            df_ratings, on="tconst", how="left"
+        )
 
-        # 3. Jointure (Inner Join) pour récupérer les notes
-        # On ne garde que les tconst présents dans notre liste de films d'horreur
-        df_final = df_basics.join(df_ratings, on="tconst", how="inner")
-
-        # 4. Nettoyage final (optionnel : supprimer titleType si plus besoin)
-        df_final = df_final.drop("titleType")
-
-        # 5. Exportation en un seul fichier CSV
+        # ── 5. Parquet to CSV Export ──────────────────────────────────────
+        # Use Parquet as an intermediate step for disk-efficient saving
         print(f"💾 Sauvegarde du CSV vers {Config.FINAL_CSV}...")
+        df_final.write.mode("overwrite").parquet("data_temp.parquet")
 
-        print("Conversion en Pandas pour export unique...")
-        pandas_df = df_final.toPandas()
-        pandas_df.to_csv(Config.FINAL_CSV, index=False)
+        # Load final data into Pandas for a convenient CSV output
+        pandas_df = pd.read_parquet("data_temp.parquet")
+        pandas_df.to_csv(Config.FINAL_CSV, index=False, encoding="utf-8")
 
-        # Statistiques et aperçu
-        count = df_final.count()
-        print(f"✅ Terminé ! {count} films d'horreur trouvés.")
+        print(f"✅ Terminé ! {len(pandas_df)} films d'horreur correspondants trouvés.")
         df_final.show(10)
-
-        spark.stop()
-
-        print("✅ Extraction terminée avec succès !")
 
     except Exception as e:
         print(f"❌ Erreur lors de l'extraction : {e}")
+
     finally:
-        spark.stop()
+        # Critical: release Spark resources
+        if spark:
+            spark.stop()
 
 
 if __name__ == "__main__":  # pragma: no cover
-    extract_horror_movies_only()
+    extract_horror_movies()

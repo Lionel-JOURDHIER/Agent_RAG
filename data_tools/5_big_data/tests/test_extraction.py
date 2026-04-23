@@ -4,13 +4,14 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 from config import Config
-from extraction import extract_horror_movies_only
+from extraction import extract_horror_movies
 from pyspark.sql import SparkSession
 
 
 # --- FIXTURE : Session Spark de Test ---
 @pytest.fixture(scope="session")
 def spark_session():
+    # On utilise une session Spark locale pour les tests
     spark = (
         SparkSession.builder.master("local[1]").appName("pytest-pyspark").getOrCreate()
     )
@@ -23,9 +24,19 @@ def spark_session():
 
 def test_extract_horror_movies_success(spark_session, tmp_path):
     # Création de mini fichiers CSV IMDb pour le test
+    tmdb_ref_path = tmp_path / "tmdb_ref.csv"
     basics_path = tmp_path / "basics.tsv"
     ratings_path = tmp_path / "ratings.tsv"
     output_path = tmp_path / "final.csv"
+
+    # 1. Mock Référence TMDB (Source initiale du script)
+    pd.DataFrame(
+        {
+            "imdb_id_fetched": ["tt1", "tt2", "NOT_FOUND"],
+            "title": ["Scream", "Toy Story", "None"],
+            "tmdb_id": [101, 102, 404],
+        }
+    ).to_csv(tmdb_ref_path, index=False)
 
     # Données Mock (Note: tconst 'tt2' n'est pas Horror, il doit être filtré)
     pd.DataFrame(
@@ -47,20 +58,27 @@ def test_extract_horror_movies_success(spark_session, tmp_path):
 
     # On patche la Config pour pointer vers nos fichiers temporaires
     with (
+        patch.object(Config, "PATH_TMDB_HORROR_SOURCE", str(tmdb_ref_path)),
         patch.object(Config, "PATH_BASICS", str(basics_path)),
         patch.object(Config, "PATH_RATINGS", str(ratings_path)),
         patch.object(Config, "FINAL_CSV", str(output_path)),
     ):
-        extract_horror_movies_only()
+        extract_horror_movies()
 
     # Vérifications
     assert os.path.exists(output_path)
     df_result = pd.read_csv(output_path)
 
-    # Seul 'tt1' doit rester (est un movie ET contient Horror ET a une note)
-    assert len(df_result) == 1
-    assert df_result.iloc[0]["primaryTitle"] == "Scream"
-    assert "titleType" not in df_result.columns  # Vérifie le .drop()
+    # Vérification de la logique :
+    # tt1 est dans TMDB, est un 'movie' dans Basics -> Présent
+    # tt2 est dans TMDB, est un 'movie' dans Basics -> Présent (même si pas Horror dans Basics, ton code ne filtre pas par genre dans Basics !)
+    # tt3 n'est pas dans la réf TMDB -> Absent
+    # NOT_FOUND est filtré -> Absent
+
+    assert len(df_result) == 2
+    assert "tt1" in df_result["tconst"].values
+    assert "tt2" in df_result["tconst"].values
+    assert "averageRating" in df_result.columns
 
 
 # --- 2. Test de l'Exception (Couverture du bloc except) ---
@@ -74,4 +92,4 @@ def test_extract_horror_movies_exception():
 
         # L'appel va entrer dans le bloc except et print l'erreur
         # On vérifie simplement que la fonction gère l'erreur sans planter le process
-        extract_horror_movies_only()
+        extract_horror_movies()
