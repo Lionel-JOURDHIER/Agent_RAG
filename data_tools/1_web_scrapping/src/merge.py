@@ -110,7 +110,7 @@ def merge_tmdb_rotten(
     print("✅  horror_movies_merged.csv exporté")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     # Use global configuration constants for direct script execution
     # This ensures that the paths remain consistent across the entire project
     merge_tmdb_rotten(
