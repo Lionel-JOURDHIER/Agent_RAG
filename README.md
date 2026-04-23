@@ -39,7 +39,7 @@ Une fois le fichier .csv extrait, on peut extraire les informations des films de
 les informations recherchées sont les suivantes : 
 - Score Critique
 - Score Audience
-- Concenssus Critique
+- Concensus Critique
 - Titre du film
 - Année du film
 
