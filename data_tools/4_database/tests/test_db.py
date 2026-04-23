@@ -8,6 +8,7 @@ from config import Config
 from db import extract_movies_table
 
 # Chemins temporaires pour les tests
+CUR_DIR = os.path.dirname(__file__)
 TEST_DB = "tests/test_movies.db"
 TEST_OUTPUT = "tests/test_output.csv"
 
@@ -15,13 +16,21 @@ TEST_OUTPUT = "tests/test_output.csv"
 @pytest.fixture
 def setup_sqlite():
     """Crée une base SQLite réelle pour le test d'extraction."""
+
     # 1. Création d'une DB de test
     conn = sqlite3.connect(TEST_DB)
     cursor = conn.cursor()
-    cursor.execute(f"CREATE TABLE {Config.TABLE_NAME} (id INTEGER, title TEXT)")
     cursor.execute(
-        f"INSERT INTO {Config.TABLE_NAME} VALUES (1, 'Alien'), (2, 'The Thing')"
+        f"CREATE TABLE {Config.TABLE_NAME} (id INTEGER, title TEXT, director_id)"
     )
+    cursor.execute(
+        f"INSERT INTO {Config.TABLE_NAME} VALUES (1, 'Alien', 1 ), (2, 'The Thing', 1)"
+    )
+
+    # AJOUT : Création de la table directors pour éviter l'erreur "no such table"
+    cursor.execute("CREATE TABLE directors (id INTEGER, name TEXT)")
+    cursor.execute("INSERT INTO directors VALUES (1, 'Ridley Scott')")
+
     conn.commit()
     conn.close()
 
@@ -33,22 +42,23 @@ def setup_sqlite():
         yield TEST_DB, TEST_OUTPUT
 
     # Nettoyage
-    for f in [TEST_DB, TEST_OUTPUT]:
-        if os.path.exists(f):
-            os.remove(f)
+    if os.path.exists(TEST_DB):
+        os.remove(TEST_DB)
+    if os.path.exists(TEST_OUTPUT):
+        os.remove(TEST_OUTPUT)
 
 
 # --- 1. Test du succès (Chemin nominal) ---
 
 
 def test_extract_movies_table_success(setup_sqlite):
-    db_path, out_path = setup_sqlite
+    _, out_path = setup_sqlite
 
     # Exécution
     extract_movies_table()
 
     # Vérifications
-    assert os.path.exists(out_path)
+    assert os.path.exists(out_path), f"Le fichier {out_path} n'a pas été créé."
     df = pl.read_csv(out_path)
     assert len(df) == 2
     assert df["title"].to_list() == ["Alien", "The Thing"]

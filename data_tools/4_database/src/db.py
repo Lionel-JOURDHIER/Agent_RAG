@@ -21,7 +21,12 @@ def extract_movies_table():
 
     try:
         # Lecture directe de la table spécifique
-        df = pl.read_database_uri(query=f"SELECT * FROM {Config.TABLE_NAME}", uri=uri)
+        query = f"""
+            SELECT t.*, d.name
+            FROM {Config.TABLE_NAME} t
+            LEFT JOIN directors d ON t.director_id = d.id
+        """
+        df = pl.read_database_uri(query=query, uri=uri)
 
         # 3. Sauvegarde en CSV
         df.write_csv(Config.OUTPUT_PATH)
