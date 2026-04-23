@@ -8,6 +8,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "pandas>=3.0.2",
     "polars>=1.40.0",
+    "pytest>=9.0.3",
     "requests>=2.33.1",
 ]
 

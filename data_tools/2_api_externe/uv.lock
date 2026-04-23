@@ -18,6 +18,7 @@ dependencies = [
     { name = "dotenv" },
     { name = "pandas" },
     { name = "polars" },
+    { name = "pytest" },
     { name = "requests" },
 ]
 
@@ -33,6 +34,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "pandas", specifier = ">=3.0.2" },
     { name = "polars", specifier = ">=1.40.0" },
+    { name = "pytest", specifier = ">=9.0.3" },
     { name = "requests", specifier = ">=2.33.1" },
 ]
 

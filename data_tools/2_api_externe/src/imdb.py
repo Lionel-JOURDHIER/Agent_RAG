@@ -142,5 +142,5 @@ def process_csv():
     print(f"✨ Terminé ! Total final : {total_success} IDs récupérés.")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     process_csv()
