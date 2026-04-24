@@ -11,8 +11,9 @@
 (cd data_tools/5_big_data  && uv sync)
 ```
 
-## 1_web_scrapping : 
-### Collecte des ficher .xml listant tout le site Rotten_tomatoes : 
+## Ingestion Multimodale
+### 1_web_scrapping : 
+#### Collecte des ficher .xml listant tout le site Rotten_tomatoes : 
 Le site Rotten_tomatoes propose dans son sitemaps l'ensemble des sites regroupant les urls. 
 Les sites de films ont une extension movies_*.xml.
 
@@ -23,7 +24,7 @@ depuis la racine du projet, executer :
 
 cela génèrera l'ensemble des fichier xml dans le dossier `rt_sitemaps`
 
-### Extraction des sites de films : 
+#### Extraction des sites de films : 
 Une fois les fichiers .xml dans le dossier `rt_sitemaps`, on peut extraire les urls de chaque film. 
 
 depuis la racine du projet, executer : 
@@ -35,7 +36,7 @@ cela génèrera un fichier : `./data_tools/1_web_scrapping/data/index_rotten_tom
 
 **NOTA IMPORTANTE** : Avant d'aller plus loin il faut avoir déjà exécuté l'extraction des films de la partie **2_api_externe**. 
 
-### Prétraitement de la base de donnée
+#### Prétraitement de la base de donnée
 le fichier .csv comprend pres de 250 000 entrée, tout les films ne sont pas des films d'horreurs. 
 Il faut donc verifier si les films sont ou nom deja présent dans la base de donnée 
 
@@ -44,7 +45,7 @@ Il faut donc verifier si les films sont ou nom deja présent dans la base de don
 ```
 cela génèrera un fichier : `./data_tools/1_web_scrapping/data/horror_movies_merged.csv`
 
-### Extraction des information du site rotten_tomatoes.
+#### Extraction des information du site rotten_tomatoes.
 Une fois le fichier .csv extrait, on peut extraire les informations des films depuis le site rotten_tomatoes. 
 les informations recherchées sont les suivantes : 
 - Score Critique
@@ -60,7 +61,7 @@ depuis la racine du projet, executer :
 
 cela génèrera un fichier : `./data_tools/1_web_scrapping/data/horror_movies_rt_scores_raw.csv`
 
-## 2_api_externe : 
+### 2_api_externe : 
 ### Recupération des films d'horreurs à partir de l'API TMDB. 
 Recupération des films d'horreurs à partir de l'API TMDB. 
 
@@ -71,29 +72,29 @@ depuis la racine du projet, exécuter :
 
 cela génèrera un fichier : `./data_tools/2_api_externe/data/horror_movies_tmdb.csv`
 
-### Suppression des doublons
+#### Suppression des doublons
 Suppression des doublons dans le fichier CSV.
 ```bash
 (cd data_tools/2_api_externe && uv run src/dedup.py)
 ```
 cela génèrera un fichier : `./data_tools/2_api_externe/data/horror_movies_tmdb_raw.csv`
 
-### Extraction de l'ID IMDB
+#### Extraction de l'ID IMDB
 Extraction de l'ID IMDB depuis l'API pour augmenter la précision des données. 
 ```bash
 (cd data_tools/2_api_externe && uv run src/imdb.py)
 ```
 cela met à jour le fichier : `./data_tools/2_api_externe/data/horror_movies_tmdb_raw.csv`
 
-### Pipeline complet : 
+#### Pipeline complet : 
 ```bash
 (cd data_tools/2_api_externe && uv run src/movies.py)
 (cd data_tools/2_api_externe && uv run src/dedup.py)
 
 ```
 
-## 3_local_files : 
-### Suppression des doublons
+### 3_local_files : 
+#### Suppression des doublons
 Suppression des doublons dans le fichier CSV.
 ```bash
 (cd data_tools/3_local_files && uv run src/dedup.py)
@@ -101,15 +102,15 @@ Suppression des doublons dans le fichier CSV.
 cela génèrera un fichier : `./data_tools/3_local_files/data/horror_movies_kaggle.csv`
 
 
-## 4_database : 
-### Extraction des données depuis la base de données
+### 4_database : 
+#### Extraction des données depuis la base de données
 Extraction complète de la table movies de la base de donnée en intégrant le nom du réalisateur.
 ```bash
 (cd data_tools/4_database && uv run src/db.py)
 ```
 cela génèrera un fichier : `./data_tools/4_database/data/horror_movies_database.csv`
 
-## 5_big_data : 
+### 5_big_data : 
 recupération d'information depuis les fichier developpeur big_data de IMDB, 
 on utilise le dataset "title.ratings.tsv" et "title.basics.tsv" qui contient des informations sur les films et les ratings
 ```bash
@@ -117,7 +118,7 @@ on utilise le dataset "title.ratings.tsv" et "title.basics.tsv" qui contient des
 ```
 cela génèrera un fichier : `./data_tools/5_big_data/data/horror_movies_imdb_scores.csv`
 
-## Synthèse des données et architecture de la base de donnée. 
+## Stratégie de Fusion et Réconciliation (MDM) :  
 ### 0_shared/data : 
 Ce dossier contient l'ensemble des fichiers CSV générés par les scripts précédents.
 
@@ -134,7 +135,7 @@ Nettoyage du fichier horror_movies_rt_scores_raw.csv selon les règles suivantes
 
 On execute ce nettoyage avec le script `rt_cleaner.py`.
 ```bash
-(cd data_tools/0_shared/services/rt_cleaner.py)
+(cd data_tools/0_shared && uv run services/rt_cleaner.py)
 ```
 
 cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_rt_scores.csv`
@@ -155,7 +156,7 @@ Nettoyage de horror_movies_tmdb_raw.csv selon les règles suivantes :
 
 On execute ce nettoyage avec le script `tmdb_cleaner.py`.
 ```bash
-(cd data_tools/0_shared/services/tmdb_cleaner.py)
+(cd data_tools/0_shared && uv run services/tmdb_cleaner.py)
 ```
 cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_tmdb.csv`
 
@@ -175,7 +176,7 @@ Nettoyage de horror_movies.csv selon les règles suivantes :
 
 On execute ce nettoyage avec le script `kaggle_cleaner.py`.
 ```bash
-(cd data_tools/0_shared/services/kaggle_cleaner.py)
+(cd data_tools/0_shared && uv run services/kaggle_cleaner.py)
 ```
 cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_kaggle.csv`
 
@@ -192,7 +193,7 @@ Nettoyage de horror_movies_database.csv selon les règles suivantes :
 
 On execute ce nettoyage avec le script `db_cleaner.py`.
 ```bash
-(cd data_tools/0_shared/services/db_cleaner.py)
+(cd data_tools/0_shared && uv run services/db_cleaner.py)
 ```
 cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_db.csv`
 
@@ -208,7 +209,7 @@ Nettoyage de horror_movies_imdb_scores.csv selon les règles suivantes :
 
 On execute ce nettoyage avec le script `imdb_cleaner.py`.
 ```bash
-(cd data_tools/0_shared/services/imdb_cleaner.py)
+(cd data_tools/0_shared && uv run services/imdb_cleaner.py)
 ```
 cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_tmdb.csv`
 
@@ -222,7 +223,7 @@ Sortie : data/collections.csv
 
 On execute la création avec le script `build_collection.py`.
 ```bash
-(cd data_tools/0_shared/services_database/build_collection.py)
+(cd data_tools/0_shared && uv run services_database/build_collection.py)
 ```
 cela génèrera un fichier : `./data_tools/0_shared/data/collections.csv`
 
@@ -238,7 +239,7 @@ Sortie : data/filmgenres.csv
   
 On execute la création avec le script `build_genre.py`.
 ```bash
-(cd data_tools/0_shared/services_database/build_genre.py)
+(cd data_tools/0_shared && uv run services_database/build_genre.py)
 ```
 cela génèrera deux fichiers CSV : 
   `./data_tools/0_shared/data/genre.csv`
@@ -252,7 +253,7 @@ Sortie : data/realisateurs.csv
 
 On execute la création avec le script `build_realisateur.py`.
 ```bash
-(cd data_tools/0_shared/services_database/build_realisateur.py)
+(cd data_tools/0_shared && uv run services_database/build_realisateur.py)
 ```
 
 cela génèrera un fichier : `./data_tools/0_shared/data/realisateurs.csv`
@@ -268,7 +269,7 @@ Sortie : data/scores_imdb.csv
 
 On execute la création avec le script `build_scores_imdb.py`.
 ```bash
-(cd data_tools/0_shared/services_database/build_scores_imdb.py)
+(cd data_tools/0_shared && uv run services_database/build_scores_imdb.py)
 ```
 
 cela génèrera un fichier : `./data_tools/0_shared/data/scores_imdb.csv`
@@ -285,7 +286,7 @@ Sortie : data/scores_rt.csv
 
 On execute la création avec le script `build_scores_rt.py`.
 ```bash
-(cd data_tools/0_shared/services_database/build_scores_rt.py)
+(cd data_tools/0_shared && uv run services_database/build_scores_rt.py)
 ```
 
 cela génèrera un fichier : `./data_tools/0_shared/data/scores_rt.csv`
@@ -303,7 +304,7 @@ Sortie : data/scores_tmdb.csv
 
 On execute la création avec le script `build_scores_tmdb.py`.
 ```bash
-(cd data_tools/0_shared/services_database/build_scores_tmdb.py)
+(cd data_tools/0_shared && uv run services_database/build_scores_tmdb.py)
 ```
 
 cela génèrera un fichier : `./data_tools/0_shared/data/scores_tmdb.csv`
@@ -334,7 +335,39 @@ Sortie : data/scores_tmdb.csv
 
 On execute la création avec le script `build_films.py`.
 ```bash
-(cd data_tools/0_shared/services_database/build_films.py)
+(cd data_tools/0_shared && uv run services_database/build_films.py)
 ```
 
 cela génèrera un fichier : `./data_tools/0_shared/data/films.csv`
+
+## Modélisation et Persistance des Données
+### Structuration de la base de données : 
+Le projet est structuré en tables : 
+
+- `collections` : contient les collections de films.
+- `films` : contient les films, avec leurs informations principales
+- `genres` : contient les genres des films
+- `realisateurs` : contient les réalisateurs des films
+- `scores_rt` : contient les scores RT des films
+- `scores_imdb` : contient les scores IMDb des films
+- `scores_tmdb` : contient les scores TMDB des films
+- `film_genres` : contient les relations entre les genres et les films
+
+### Creation de la base de donnée sqlite : 
+Dans le cadre de la création de la base de données, nous avons utilisé SQLite pour un premier test de stockage des données. 
+Cela permet d'avoir une vision directe des defauts éventuels d'intégration de la bdd. 
+
+On execute la création avec le script `db_sqlite.py`.
+```bash
+(cd data_tools/0_shared/ && uv run db_sqlite.py)
+```
+
+cela génèrera un fichier : `./data_tools/0_shared/sqlite/horror_db.sqlite`
+
+### Ingestion des données de la table films : 
+Pour faire l'ingestion des données dans la table films, nous avons utilisé le script `ingest_films.py`.
+
+```bash
+(cd data_tools/0_shared/ && uv run services_database/ingest_films.py)
+```
+la table films est alors mise à jour dans la base de donnée. 
