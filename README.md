@@ -133,6 +133,24 @@ On execute ce nettoyage avec le script `rt_cleaner.py`.
 (cd data_tools/0_shared/services/rt_cleaner.py)
 ```
 
+#### Fichier TMDB : 
+Nettoyage de horror_movies_tmdb_raw.csv selon les règles suivantes :
+
+  1. vote_average  : 0.0 → NaN
+  2. Doublons exacts (title + release_date) : garder la ligne avec le moins de NaN
+  3. genres        : inchangé
+  4. Films futurs  : inchangés
+  5. url_rotten    : inchangé
+  6. popularity    : 0.0 → NaN
+  7. overview      : inchangé
+  8. title null    : suppression de la ligne
+  9. suppr \n\r    : suppression des retour à la ligne
+  +  id_tertiaire  : slug(title)_year ajouté en première colonne
+
+On execute ce nettoyage avec le script `tmdb_cleaner.py`.
+```bash
+(cd data_tools/0_shared/services/tmdb_cleaner.py)
+```
 
 
 ### Services de traitement des données : 
