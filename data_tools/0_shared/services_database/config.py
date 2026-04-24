@@ -1,0 +1,15 @@
+class Config:
+    INPUT_CSV_RT = "raw_data/horror_movies_rt_scores.csv"
+    INPUT_CSV_TMDB = "raw_data/horror_movies_tmdb.csv"
+    INPUT_CSV_DB = "raw_data/horror_movies_db.csv"
+    INPUT_CSV_IMDB = "raw_data/horror_movies_imdb_scores.csv"
+    INPUT_CSV_KAGGLE = "raw_data/horror_movies_kaggle.csv"
+
+    CSV_COLLECTIONS = "data/collections.csv"
+    CSV_FILMS = "data/films.csv"
+    CSV_GENRES = "data/genres.csv"
+    CSV_REALISATEURS = "data/realisateurs.csv"
+    CSV_SCORES_RT = "data/scores_rt.csv"
+    CSV_SCORES_IMDB = "data/scores_imdb.csv"
+    CSV_SCORES_TMDB = "data/scores_tmdb.csv"
+    CSV_FILMGENRES = "data/film_genres.csv"
