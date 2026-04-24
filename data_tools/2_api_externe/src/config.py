@@ -42,6 +42,7 @@ class Config:
 
     # Storage Paths
     TEMP_PATH: str = "data/horror_movies_tmdb.csv"
+    RAW_PATH: str = "data/horror_movies_tmdb_raw.csv"
     OUTPUT_PATH: str = "../0_shared/data/horror_movies_tmdb.csv"
 
     # Pagination safety threshold (TMDB strictly limits to 500 pages per query)
