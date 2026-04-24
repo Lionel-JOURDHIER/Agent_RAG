@@ -85,6 +85,13 @@ Extraction de l'ID IMDB depuis l'API pour augmenter la précision des données.
 ```
 cela met à jour le fichier : `./data_tools/2_api_externe/data/horror_movies_tmdb_raw.csv`
 
+### Pipeline complet : 
+```bash
+(cd data_tools/2_api_externe && uv run src/movies.py)
+(cd data_tools/2_api_externe && uv run src/dedup.py)
+
+```
+
 ## 3_local_files : 
 ### Suppression des doublons
 Suppression des doublons dans le fichier CSV.
@@ -205,5 +212,129 @@ On execute ce nettoyage avec le script `imdb_cleaner.py`.
 ```
 cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_tmdb.csv`
 
-### Services de traitement des données : 
-Pour pouvoir regrouper les différents csv, on uttilise un prétraitement des données pour pouvoir comparer les données. 
+### Création des tables format csv
+#### Création de la table collections.csv : 
+Source : raw_data/horror_movies_kaggle.csv (colonnes collection + collection_name)
+Sortie : data/collections.csv
+  id_collection (AUTO_INCREMENT géré par la BDD, absent du CSV)
+  tmdb_collection_id (INT)
+  collection_name    (VARCHAR 60)
+
+On execute la création avec le script `build_collection.py`.
+```bash
+(cd data_tools/0_shared/services_database/build_collection.py)
+```
+cela génèrera un fichier : `./data_tools/0_shared/data/collections.csv`
+
+#### Création des tables genre et film_genres : 
+Source : raw_data/horror_movies_kaggle.csv (colonne genres)
+Sortie : data/genres.csv
+    id_genre (AUTO_INCREMENT géré par la BDD, absent du CSV)
+    genre_name    (VARCHAR 50)
+Sortie : data/filmgenres.csv
+    id_film_genre (AUTO_INCREMENT géré par la BDD, absent du CSV)
+    tmdb_id (INT FK),
+    id_genre (SMALLINT FK)
+  
+On execute la création avec le script `build_genre.py`.
+```bash
+(cd data_tools/0_shared/services_database/build_genre.py)
+```
+cela génèrera deux fichiers CSV : 
+  `./data_tools/0_shared/data/genre.csv`
+  `./data_tools/0_shared/data/film_genres.csv`
+
+#### Création de la table Réalisateurs : 
+Source : raw_data/horror_movies_db (colonnes director_id + name)
+Sortie : data/realisateurs.csv
+  director_id (INT PK)
+  name        (VARCHAR 50)
+
+On execute la création avec le script `build_realisateur.py`.
+```bash
+(cd data_tools/0_shared/services_database/build_realisateur.py)
+```
+
+cela génèrera un fichier : `./data_tools/0_shared/data/realisateurs.csv`
+
+#### Création de la table Scores IMDB : 
+Source : raw_data/horror_movies_imdb_scores.csv (tconst + title + averageRating + numVotes)
+Sortie : data/scores_imdb.csv
+    id_score_imdb (AUTO_INCREMENT géré par la BDD, absent du CSV)
+    tconst (VARCHAR(10) FK),
+    title (VARCHAR(150)),
+    average_rating (DECIMAL(3,1)),
+    num_votes (INT)
+
+On execute la création avec le script `build_scores_imdb.py`.
+```bash
+(cd data_tools/0_shared/services_database/build_scores_imdb.py)
+```
+
+cela génèrera un fichier : `./data_tools/0_shared/data/scores_imdb.csv`
+
+#### Création de la table Scores RT : 
+Source : raw_data/horror_movies_rt_scores.csv (colonnes id_tertiaire + url_rotten + rt_tomatometer + rt_audience_score + rt_critics_consensus)
+Sortie : data/scores_rt.csv
+    id_score_rt (AUTO_INCREMENT géré par la BDD, absent du CSV)
+    id_tertiaire (VARCHAR(200) FK),
+    url_rotten (VARCHAR(120) UK),
+    rt_tomatometer (SMALLINT),
+    rt_audience_score (SMALLINT),
+    rt_critics_consensus (VARCHAR(285))
+
+On execute la création avec le script `build_scores_rt.py`.
+```bash
+(cd data_tools/0_shared/services_database/build_scores_rt.py)
+```
+
+cela génèrera un fichier : `./data_tools/0_shared/data/scores_rt.csv`
+
+#### Création de la table Scores TMDB : 
+Source :
+    raw_data/horror_movies_tmdb.csv (tmdb_id + vote_average + vote_count + popularity)
+
+Sortie : data/scores_tmdb.csv
+    id_score_tmdb (AUTO_INCREMENT géré par la BDD, absent du CSV)
+    tmdb_id (INT FK),
+    vote_average (DECIMAL(3,1)),
+    vote_count (INT),
+    popularity (DECIMAL(10,4))
+
+On execute la création avec le script `build_scores_tmdb.py`.
+```bash
+(cd data_tools/0_shared/services_database/build_scores_tmdb.py)
+```
+
+cela génèrera un fichier : `./data_tools/0_shared/data/scores_tmdb.csv`
+
+#### Création de la tables films.csv : 
+Source :
+    raw_data/horror_movies_tmdb.csv (tmdb_id + imdb_id_fetched + id_tertiaire + title + release_date + overview + poster_path)
+    raw_data/horror_movies_kaggle.csv (id_collection + original_title + original_language + status + runtime + tagline + budget + revenue)
+    raw_data/horror_movies_db.csv (director_id)
+
+Sortie : data/scores_tmdb.csv
+    tmdb_id (INT PK),
+    director_id (INT FK),
+    id_collection (INT FK),
+    imdb_id(VARCHAR(10) UK),
+    id_tertiaire(VARCHAR(255), UK),
+    title (VARCHAR(200), NON NULL),
+    original_title (VARCHAR(200)),
+    original_language (CHAR(2)),
+    release_date (DATE),
+    status (VARCHAR(15)),
+    runtime (SMALLINT),
+    overview (TEXT),
+    tagline (VARCHAR(260)),
+    poster_path (VARCHAR(65)),
+    budget (BIGINT),
+    revenue (BIGINT),
+
+On execute la création avec le script `build_films.py`.
+```bash
+(cd data_tools/0_shared/services_database/build_films.py)
+```
+
+cela génèrera un fichier : `./data_tools/0_shared/data/films.csv`
