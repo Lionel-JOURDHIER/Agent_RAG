@@ -17,4 +17,4 @@ def run_deduplication(input_path, output_path):
 
 
 if __name__ == "__main__":  # pragma: no cover
-    run_deduplication(Config.INPUT_PATH, Config.INPUT_PATH)
+    run_deduplication(Config.INPUT_PATH, Config.OUTPUT_PATH)

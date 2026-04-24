@@ -42,6 +42,7 @@ Il faut donc verifier si les films sont ou nom deja présent dans la base de don
 ```bash
 (cd data_tools/1_web_scrapping  && uv run src/merge.py)
 ```
+cela génèrera un fichier : `./data_tools/1_web_scrapping/data/horror_movies_merged.csv`
 
 ### Extraction des information du site rotten_tomatoes.
 Une fois le fichier .csv extrait, on peut extraire les informations des films depuis le site rotten_tomatoes. 
@@ -57,7 +58,7 @@ depuis la racine du projet, executer :
 (cd data_tools/1_web_scrapping  && uv run src/crawler.py)
 ```
 
-cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_rt_scores.csv`
+cela génèrera un fichier : `./data_tools/1_web_scrapping/data/horror_movies_rt_scores_raw.csv`
 
 ## 2_api_externe : 
 ### Recupération des films d'horreurs à partir de l'API TMDB. 
@@ -68,19 +69,21 @@ depuis la racine du projet, exécuter :
 (cd data_tools/2_api_externe && uv run src/movies.py)
 ```
 
-cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_tmdb.csv`
+cela génèrera un fichier : `./data_tools/2_api_externe/data/horror_movies_tmdb.csv`
 
 ### Suppression des doublons
 Suppression des doublons dans le fichier CSV.
 ```bash
 (cd data_tools/2_api_externe && uv run src/dedup.py)
 ```
+cela génèrera un fichier : `./data_tools/2_api_externe/data/horror_movies_tmdb_raw.csv`
 
 ### Extraction de l'ID IMDB
 Extraction de l'ID IMDB depuis l'API pour augmenter la précision des données. 
 ```bash
 (cd data_tools/2_api_externe && uv run src/imdb.py)
 ```
+cela met à jour le fichier : `./data_tools/2_api_externe/data/horror_movies_tmdb_raw.csv`
 
 ## 3_local_files : 
 ### Suppression des doublons
@@ -88,14 +91,8 @@ Suppression des doublons dans le fichier CSV.
 ```bash
 (cd data_tools/3_local_files && uv run src/dedup.py)
 ```
-cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_kaggle.csv`
+cela génèrera un fichier : `./data_tools/3_local_files/data/horror_movies_kaggle.csv`
 
-### Selection des informations pertinantes
-Choix des colonnes pertinentes pour l'analyse des données. 
-```bash
-(cd data_tools/3_local_files && uv run src/processor.py)
-```
-cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_kaggle.csv`
 
 ## 4_database : 
 ### Extraction des données depuis la base de données
@@ -103,7 +100,7 @@ Extraction complète de la table movies de la base de donnée en intégrant le n
 ```bash
 (cd data_tools/4_database && uv run src/db.py)
 ```
-cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_database.csv`
+cela génèrera un fichier : `./data_tools/4_database/data/horror_movies_database.csv`
 
 ## 5_big_data : 
 recupération d'information depuis les fichier developpeur big_data de IMDB, 
@@ -111,7 +108,7 @@ on utilise le dataset "title.ratings.tsv" et "title.basics.tsv" qui contient des
 ```bash
 (cd data_tools/5_big_data && uv run src/extraction.py)
 ```
-cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_imdb_scores.csv`
+cela génèrera un fichier : `./data_tools/5_big_data/data/horror_movies_imdb_scores.csv`
 
 ## Synthèse des données et architecture de la base de donnée. 
 ### 0_shared/data : 
@@ -133,6 +130,8 @@ On execute ce nettoyage avec le script `rt_cleaner.py`.
 (cd data_tools/0_shared/services/rt_cleaner.py)
 ```
 
+cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_rt_scores.csv`
+
 #### Fichier TMDB : 
 Nettoyage de horror_movies_tmdb_raw.csv selon les règles suivantes :
 
@@ -151,6 +150,27 @@ On execute ce nettoyage avec le script `tmdb_cleaner.py`.
 ```bash
 (cd data_tools/0_shared/services/tmdb_cleaner.py)
 ```
+cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_tmdb.csv`
+
+#### Fichier Kaggle : 
+Nettoyage de horror_movies.csv selon les règles suivantes :
+
+  1.  Unnamed: 0 (index fantôme)          : suppression
+  2.  adult (100% False)                  : suppression
+  3.  budget <1000 et >0 (unités mixtes)  : → NaN
+  4.  budget et revenue zéros             : → NaN
+  5.  vote_average et vote_count zéros    : → NaN
+      + incohérences croisées             : → NaN sur le champ incohérent
+  6.  runtime zéros                       : → NaN  (< 10 min conservés)
+  7.  popularity zéros                    : conservés
+  8.  status                              : inchangé
+  9.  id_tertiaire                        : slug(title)_year en première colonne
+
+On execute ce nettoyage avec le script `kaggle_cleaner.py`.
+```bash
+(cd data_tools/0_shared/services/kaggle_cleaner.py)
+```
+cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_kaggle.csv`
 
 #### Fichier Database : 
 Nettoyage de horror_movies_database.csv selon les règles suivantes :
@@ -167,6 +187,7 @@ On execute ce nettoyage avec le script `db_cleaner.py`.
 ```bash
 (cd data_tools/0_shared/services/db_cleaner.py)
 ```
+cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_db.csv`
 
 #### Fichier IMDB_scores : 
 Nettoyage de horror_movies_imdb_scores.csv selon les règles suivantes :
@@ -182,7 +203,7 @@ On execute ce nettoyage avec le script `imdb_cleaner.py`.
 ```bash
 (cd data_tools/0_shared/services/imdb_cleaner.py)
 ```
-
+cela génèrera un fichier : `./data_tools/0_shared/raw_data/horror_movies_tmdb.csv`
 
 ### Services de traitement des données : 
 Pour pouvoir regrouper les différents csv, on uttilise un prétraitement des données pour pouvoir comparer les données. 
