@@ -8,7 +8,7 @@ Nettoyage de horror_movies_rt_scores.csv selon les règles suivantes :
   3. rt_tomatometer zéros                        : conservés (0% valide sur RT)
   4. rt_audience_score zéros                     : conservés (0% valide sur RT)
   5. year float64                                : → Int64 (entier nullable)
-  6. id_tertiaire                                : slug(title)_year en première colonne
+  6. id_tertiaire                                : slug(title)_year ajouté
 """
 
 from pathlib import Path

@@ -126,7 +126,7 @@ Nettoyage du fichier horror_movies_rt_scores_raw.csv selon les règles suivantes
   3. rt_tomatometer zéros                        : conservés (0% valide sur RT)
   4. rt_audience_score zéros                     : conservés (0% valide sur RT)
   5. year float64                                : → Int64 (entier nullable)
-  6. id_tertiaire                                : slug(title)_year en première colonne
+  6. id_tertiaire                                : slug(title)_year ajouté
 
 On execute ce nettoyage avec le script `rt_cleaner.py`.
 ```bash
@@ -145,11 +145,42 @@ Nettoyage de horror_movies_tmdb_raw.csv selon les règles suivantes :
   7. overview      : inchangé
   8. title null    : suppression de la ligne
   9. suppr \n\r    : suppression des retour à la ligne
-  +  id_tertiaire  : slug(title)_year ajouté en première colonne
+  +  id_tertiaire  : slug(title)_year ajouté 
 
 On execute ce nettoyage avec le script `tmdb_cleaner.py`.
 ```bash
 (cd data_tools/0_shared/services/tmdb_cleaner.py)
+```
+
+#### Fichier Database : 
+Nettoyage de horror_movies_database.csv selon les règles suivantes :
+
+  1. budget < 1000 et > 0 (unités mixtes)  : → NaN
+  2. budget et revenue zéros               : → NaN
+  3. vote_average et vote_count zéros      : → NaN
+  4. popularity zéros                      : conservés
+  5. colonne `id` séquentielle             : supprimée  (`uid` = vrai ID TMDB)
+  6. id_tertiaire                          : slug(title)_year ajouté
+
+
+On execute ce nettoyage avec le script `db_cleaner.py`.
+```bash
+(cd data_tools/0_shared/services/db_cleaner.py)
+```
+
+#### Fichier IMDB_scores : 
+Nettoyage de horror_movies_imdb_scores.csv selon les règles suivantes :
+
+  1. title null (1 ligne)          : suppression
+  2. id_tertiaire                  : non généré (pas de colonne année)
+  3. numVotes                      : inchangé (float64 conservé)
+  4. genres format virgule         : normalisé → "Horror, Drama" (virgule + espace)
+  5. primaryTitle null             : primaryTitle = title
+
+
+On execute ce nettoyage avec le script `imdb_cleaner.py`.
+```bash
+(cd data_tools/0_shared/services/imdb_cleaner.py)
 ```
 
 

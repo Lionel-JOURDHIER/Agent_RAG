@@ -12,8 +12,7 @@ Nettoyage de horror_movies_tmdb_raw.csv selon les règles suivantes :
   7. overview      : inchangé
   8. title null    : suppression de la ligne
   9. suppr \n\r    : suppression des retour à la ligne
-  +  id_tertiaire  : slug(title)_year ajouté en première colonne
-
+  +  id_tertiaire  : slug(title)_year ajouté
 """
 
 from pathlib import Path
