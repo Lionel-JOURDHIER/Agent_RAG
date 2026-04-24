@@ -122,6 +122,13 @@ def build_films() -> pd.DataFrame:
     df["tagline"] = df["tagline"].str.strip().str[:260]
     df["poster_path"] = df["poster_path"].str.strip().str[:65]
 
+    # TODO
+    df = df.replace({"NOT_FOUND": None, "": None, "N/A": None})
+    mask_tert = df["id_tertiaire"].notna()
+    df_with_tert = df[mask_tert].drop_duplicates(subset=["id_tertiaire"], keep="first")
+    df_without_tert = df[~mask_tert]
+    df = pd.concat([df_with_tert, df_without_tert], ignore_index=True)
+
     # -- 6. Column Ordering --
     df = df[
         [
@@ -143,11 +150,14 @@ def build_films() -> pd.DataFrame:
             "revenue",
         ]
     ]
-
-    df.to_csv(Config.CSV_FILMS, index=False, encoding="utf-8")
-    print("Export → %s (%d lignes)", Config.CSV_FILMS, len(df))
     return df
 
 
+def export_films(df: pd.DataFrame):
+    df.to_csv(Config.CSV_FILMS, index=False, encoding="utf-8")
+    print("Export → %s (%d lignes)", Config.CSV_FILMS, len(df))
+
+
 if __name__ == "__main__":
-    build_films()
+    df = build_films()
+    export_films(df)
