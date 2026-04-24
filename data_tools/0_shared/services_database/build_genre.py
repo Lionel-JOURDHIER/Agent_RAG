@@ -1,11 +1,11 @@
 """
-build_collections.py
+data_tools/0_shared/services_database/build_genre.py
 ─────────────────────
-Source : kaggle (colonne genres)
-Sortie : genres.csv
+Source : raw_data/horror_movies_kaggle.csv (colonne genres)
+Sortie : data/genres.csv
     id_genre (AUTO_INCREMENT géré par la BDD, absent du CSV)
     genre_name    (VARCHAR 50)
-Sortie : filmgenres.csv
+Sortie : data/filmgenres.csv
     id_film_genre (AUTO_INCREMENT géré par la BDD, absent du CSV)
     tmdb_id (INT FK),
     id_genre (SMALLINT FK)

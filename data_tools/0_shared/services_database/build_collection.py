@@ -1,8 +1,8 @@
 """
-build_collections.py
+data_tools/0_shared/services_database/build_collection.py
 ─────────────────────
-Source : kaggle (colonnes collection + collection_name)
-Sortie : collections.csv
+Source : raw_data/horror_movies_kaggle.csv (colonnes collection + collection_name)
+Sortie : data/collections.csv
   id_collection (AUTO_INCREMENT géré par la BDD, absent du CSV)
   tmdb_collection_id (INT)
   collection_name    (VARCHAR 60)

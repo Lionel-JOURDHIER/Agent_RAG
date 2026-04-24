@@ -1,0 +1,58 @@
+"""
+data_tools/0_shared/services_database/build_scores_tmdb.py
+──────────────────────
+Source :
+    raw_data/horror_movies_tmdb.csv (tmdb_id + vote_average + vote_count + popularity)
+
+Sortie : data/scores_tmdb.csv
+    id_score_tmdb (AUTO_INCREMENT géré par la BDD, absent du CSV)
+    tmdb_id (INT FK),
+    vote_average (DECIMAL(3,1)),
+    vote_count (INT),
+    popularity (DECIMAL(10,4))
+
+"""
+
+import pandas as pd
+from config import Config
+
+
+def build_scores_tmdb() -> pd.DataFrame:
+    print("Lecture : %s", Config.INPUT_CSV_TMDB)
+    df = pd.read_csv(
+        Config.INPUT_CSV_TMDB,
+        usecols=[
+            "tmdb_id",
+            "vote_average",
+            "vote_count",
+            "popularity",
+        ],
+        low_memory=False,
+    )
+
+    df = df.dropna(subset=["vote_average", "vote_count", "popularity"], how="all")
+
+    # vote_average et popularity doivent rester des floats
+    df["vote_average"] = pd.to_numeric(df["vote_average"], errors="coerce")
+    df["popularity"] = pd.to_numeric(df["popularity"], errors="coerce")
+
+    # vote_count peut être un Int64 (nullable)
+    df["tmdb_id"] = pd.to_numeric(df["tmdb_id"], errors="coerce").astype("Int64")
+    df["vote_count"] = pd.to_numeric(df["vote_count"], errors="coerce").astype("Int64")
+
+    df = df[
+        [
+            "tmdb_id",
+            "vote_average",
+            "vote_count",
+            "popularity",
+        ]
+    ]
+
+    df.to_csv(Config.CSV_SCORES_TMDB, index=False, encoding="utf-8")
+    print("Export → %s (%d lignes)", Config.CSV_SCORES_TMDB, len(df))
+    return df
+
+
+if __name__ == "__main__":
+    build_scores_tmdb()

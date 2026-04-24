@@ -1,8 +1,8 @@
 """
-build_realisateurs.py
+data_tools/0_shared/services_database/build_realisateur.py
 ──────────────────────
-Source : db (colonnes director_id + name)
-Sortie : realisateurs.csv
+Source : raw_data/horror_movies_db (colonnes director_id + name)
+Sortie : data/realisateurs.csv
   director_id (INT PK)
   name        (VARCHAR 50)
 """
