@@ -18,6 +18,16 @@ from config import Config
 
 
 def build_scores_tmdb() -> pd.DataFrame:
+    """
+    Extracts and normalizes TMDB performance metrics (ratings, counts, and popularity).
+
+    This function ensures that movie IDs and vote counts are handled as integers,
+    while ratings and popularity scores maintain their decimal precision.
+
+    Returns:
+        pd.DataFrame: A cleaned DataFrame containing TMDB metrics.
+    """
+    # 0. Load source data with specific columns to save memory
     print("Lecture : %s", Config.INPUT_CSV_TMDB)
     df = pd.read_csv(
         Config.INPUT_CSV_TMDB,
@@ -30,16 +40,19 @@ def build_scores_tmdb() -> pd.DataFrame:
         low_memory=False,
     )
 
+    # 1. Cleaning: Drop rows where all score-related metrics are null
     df = df.dropna(subset=["vote_average", "vote_count", "popularity"], how="all")
 
-    # vote_average et popularity doivent rester des floats
+    # 2. Type Conversion: Ensure scores are floats
+    # Using errors="coerce" to handle potential non-numeric strings in the source
     df["vote_average"] = pd.to_numeric(df["vote_average"], errors="coerce")
     df["popularity"] = pd.to_numeric(df["popularity"], errors="coerce")
 
-    # vote_count peut être un Int64 (nullable)
+    # 3. ID and Count Conversion: Cast to nullable Integer type (Int64)
     df["tmdb_id"] = pd.to_numeric(df["tmdb_id"], errors="coerce").astype("Int64")
     df["vote_count"] = pd.to_numeric(df["vote_count"], errors="coerce").astype("Int64")
 
+    # 4. Final selection and ordering of columns
     df = df[
         [
             "tmdb_id",
@@ -49,6 +62,7 @@ def build_scores_tmdb() -> pd.DataFrame:
         ]
     ]
 
+    # 5. Export to CSV
     df.to_csv(Config.CSV_SCORES_TMDB, index=False, encoding="utf-8")
     print("Export → %s (%d lignes)", Config.CSV_SCORES_TMDB, len(df))
     return df

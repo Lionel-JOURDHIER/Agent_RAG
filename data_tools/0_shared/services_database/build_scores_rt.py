@@ -17,6 +17,19 @@ from config import Config
 
 
 def build_scores_rt() -> pd.DataFrame:
+    """
+    Extracts, cleans, and normalizes Rotten Tomatoes (RT) movie scores and consensus data.
+
+    Processes raw RT data by stripping strings, truncating text to database-safe lengths,
+    and converting score metrics into nullable integers. Rows lacking any score or
+    consensus information are discarded.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing cleaned RT metrics with columns:
+                      ['id_tertiaire', 'url_rotten', 'rt_tomatometer',
+                       'rt_audience_score', 'rt_critics_consensus'].
+    """
+    # 0. Load source data with selective column loading
     print("Lecture : %s", Config.INPUT_CSV_RT)
     df = pd.read_csv(
         Config.INPUT_CSV_RT,
@@ -30,21 +43,28 @@ def build_scores_rt() -> pd.DataFrame:
         low_memory=False,
     )
 
-    # --- FILTRAGE ---
-    # On supprime la ligne si rt_tomatometer ET rt_audience_score ET rt_critics_consensus sont NaN
-    df = df.dropna(subset=["rt_tomatometer", "rt_audience_score", "rt_critics_consensus"], how='all')
+    # 1. Filtering: Drop row if all three primary RT metrics are missing
+    df = df.dropna(
+        subset=["rt_tomatometer", "rt_audience_score", "rt_critics_consensus"],
+        how="all",
+    )
 
-    # Nettoyage des chaînes
+    # 2. String Cleaning: Trim whitespace and truncate to fit DB constraints (e.g., VARCHAR limits)
     df["id_tertiaire"] = df["id_tertiaire"].str.strip().str[:200]
     df["url_rotten"] = df["url_rotten"].str.strip().str[:120]
-    
-    # Correction : ton docstring dit VARCHAR(285) pour le consensus
+
+    # Matching docstring requirement: VARCHAR(285) for the consensus text
     df["rt_critics_consensus"] = df["rt_critics_consensus"].str.strip().str[:285]
 
-    # Typage des scores en Int64 (supporte les NaN/NULL sans transformer en float)
-    df["rt_tomatometer"] = pd.to_numeric(df["rt_tomatometer"], errors='coerce').astype("Int64")
-    df["rt_audience_score"] = pd.to_numeric(df["rt_audience_score"], errors='coerce').astype("Int64")
-    
+    # 3. Type Conversion: Convert scores to nullable Int64 to preserve NaNs without float conversion
+    df["rt_tomatometer"] = pd.to_numeric(df["rt_tomatometer"], errors="coerce").astype(
+        "Int64"
+    )
+    df["rt_audience_score"] = pd.to_numeric(
+        df["rt_audience_score"], errors="coerce"
+    ).astype("Int64")
+
+    # 4. Final selection and ordering
     df = df[
         [
             "id_tertiaire",
@@ -55,6 +75,7 @@ def build_scores_rt() -> pd.DataFrame:
         ]
     ]
 
+    # 5. Export to CSV
     df.to_csv(Config.CSV_SCORES_RT, index=False, encoding="utf-8")
     print("Export → %s (%d lignes)", Config.CSV_SCORES_RT, len(df))
     return df

@@ -22,73 +22,88 @@ import pandas as pd
 from config import Config
 from creation_id import make_id_tertiaire
 
-# ── Pipeline ──────────────────────────────────────────────────────────────────
-
 
 def fix(input_path: Path, output_path: Path) -> pd.DataFrame:
+    """
+    Performs extensive data cleaning on movie datasets, including structural
+    pruning, sanity checks on financial metrics, and cross-validation of scores.
+
+    Args:
+        input_path (Path): Path to the raw CSV file.
+        output_path (Path): Path where the cleaned CSV will be exported.
+
+    Returns:
+        pd.DataFrame: The fully processed and reordered DataFrame.
+    """
+    # Load dataset
     print("Lecture : %s", input_path)
     df = pd.read_csv(input_path, low_memory=False)
     print("Shape initiale                        : %d × %d", *df.shape)
 
-    # ── Nettoyage des retours à la ligne sur toutes les colonnes string ───────
+    # -- Global String Cleanup --
+    # Remove unwanted line breaks and carriage returns in text fields
     str_cols = df.select_dtypes(include="str").columns
     df[str_cols] = df[str_cols].apply(
         lambda col: col.str.replace(r"[\r\n]+", " ", regex=True).str.strip()
     )
     print("Retours à la ligne nettoyés           : %d colonnes", len(str_cols))
 
-    # ── 1. Suppression de Unnamed: 0 (index fantôme) ─────────────────────────
+    # -- Structural Pruning --
+    # Drop ghost index and columns with no informational value
     df = df.drop(columns=["Unnamed: 0"])
     print("Colonne 'Unnamed: 0' supprimée")
 
-    # ── 2. Suppression de adult (100% False, zéro information) ───────────────
     df = df.drop(columns=["adult"])
     print("Colonne 'adult' supprimée (100%% False)")
 
-    # ── 3. budget <1000 et >0 → NaN (unités mixtes, probablement en M$) ──────
+    # -- Financial & Metric Normalization --
+    # Handle suspicious budget units (likely mixed Million/Dollar units)
     mask_sus = (df["budget"] > 0) & (df["budget"] < 1000)
     n = mask_sus.sum()
     df.loc[mask_sus, "budget"] = float("nan")
     print("budget unités suspectes → NaN         : %d valeur(s)", n)
 
-    # ── 4a. budget zéros → NaN ───────────────────────────────────────────────
+    # Replace hard-coded zeros with actual missing value indicators (NaN)
+    # Budget
     n = (df["budget"] == 0).sum()
     df["budget"] = df["budget"].replace(0.0, float("nan"))
     print("budget zéros → NaN                    : %d valeur(s)", n)
 
-    # ── 4b. revenue zéros → NaN ──────────────────────────────────────────────
+    # Revenue
     n = (df["revenue"] == 0).sum()
     df["revenue"] = df["revenue"].replace(0.0, float("nan"))
     print("revenue zéros → NaN                   : %d valeur(s)", n)
 
-    # ── 5a. vote_average zéros → NaN ─────────────────────────────────────────
+    # vote average
     n = (df["vote_average"] == 0).sum()
     df["vote_average"] = df["vote_average"].replace(0.0, float("nan"))
     print("vote_average zéros → NaN              : %d valeur(s)", n)
 
-    # ── 5b. vote_count zéros → NaN ───────────────────────────────────────────
+    # vote count
     n = (df["vote_count"] == 0).sum()
     df["vote_count"] = df["vote_count"].replace(0, pd.NA)
     print("vote_count zéros → NaN                : %d valeur(s)", n)
 
-    # ── 5c. Incohérence avg>0 mais count=0 → count = NaN ─────────────────────
+    # -- Cross-Validation of Vote Metrics --
+    # Inconsistency 1: Rating exists but count is missing
     mask = df["vote_average"].notna() & df["vote_count"].isna()
     n = mask.sum()
     df.loc[mask, "vote_count"] = pd.NA
     print("vote_count incohérent → NaN           : %d ligne(s)", n)
 
-    # ── 5d. Incohérence count>0 mais avg=0 → avg = NaN ───────────────────────
+    # Inconsistency 2: Count exists but rating is missing
     mask = df["vote_count"].notna() & df["vote_average"].isna()
     n = mask.sum()
     df.loc[mask, "vote_average"] = float("nan")
     print("vote_average incohérent → NaN         : %d ligne(s)", n)
 
-    # ── 6. runtime zéros → NaN (courts-métrages < 10 min conservés) ──────────
+    # Inconsistency 3 : runtime zéros → NaN
     n = (df["runtime"] == 0).sum()
     df["runtime"] = df["runtime"].replace(0, pd.NA)
     print("runtime zéros → NaN                   : %d valeur(s)", n)
 
-    # ── 9. id_tertiaire ──────────────────────────────────────────────────────
+    # -- third Key Generation --
+    # Extract year and create slug-based tertiary ID
     release_dt = pd.to_datetime(df["release_date"], errors="coerce")
     year_series = release_dt.dt.year
 
@@ -99,7 +114,7 @@ def fix(input_path: Path, output_path: Path) -> pd.DataFrame:
     if n_no_id:
         print("Lignes sans id_tertiaire              : %d", n_no_id)
 
-    # ── Réordonnancement des colonnes ─────────────────────────────────────────
+    # -- Logical Column Reordering --
     priority = [
         "id",
         "id_tertiaire",
@@ -118,7 +133,7 @@ def fix(input_path: Path, output_path: Path) -> pd.DataFrame:
     other = [c for c in df.columns if c not in priority]
     df = df[priority + other]
 
-    # ── Export ────────────────────────────────────────────────────────────────
+    # Export
     df.to_csv(output_path, index=False, encoding="utf-8")
     print("Shape finale                          : %d × %d", *df.shape)
     print("Export → %s", output_path)

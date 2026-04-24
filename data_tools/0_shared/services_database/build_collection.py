@@ -13,6 +13,16 @@ from config import Config
 
 
 def build_collections() -> pd.DataFrame:
+    """
+    Extracts and normalizes movie collections into a separate reference table.
+
+    Reads from the Kaggle source, filters for unique collections, and formats
+    columns to create a clean mapping between TMDB collection IDs and names.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing unique 'tmdb_collection_id' and 'collection_name'.
+    """
+    # 0. Load specific columns to save memory
     print("Lecture : %s", Config.INPUT_CSV_KAGGLE)
     df = pd.read_csv(
         Config.INPUT_CSV_KAGGLE,
@@ -20,17 +30,20 @@ def build_collections() -> pd.DataFrame:
         low_memory=False,
     )
 
-    # Suppression des films sans collection
+    # 1. Integrity check: Remove movies that do not belong to any collection
     df = df.dropna(subset=["collection"])
 
-    # Déduplication — une collection = une ligne
+    # 2. Deduplication: Ensure each collection ID appears only once in the reference table
     df = df.drop_duplicates(subset=["collection"]).reset_index(drop=True)
 
-    # Renommage + typage
+    # 3. Rename and Type Casting
     df = df.rename(columns={"collection": "tmdb_collection_id"})
+
+    # Ensure ID is integer (avoids .0 floats) and truncate name for DB compatibility
     df["tmdb_collection_id"] = df["tmdb_collection_id"].astype(int)
     df["collection_name"] = df["collection_name"].str.strip().str[:60]
 
+    # 4. Final selection
     df = df[["tmdb_collection_id", "collection_name"]]
 
     df.to_csv(Config.CSV_COLLECTIONS, index=False, encoding="utf-8")

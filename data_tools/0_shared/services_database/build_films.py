@@ -30,8 +30,19 @@ from config import Config
 
 
 def build_films() -> pd.DataFrame:
+    """
+    Merges TMDB, Kaggle, and internal Database sources into a consolidated films table.
 
-    # ── 1. TMDB — base principale ─────────────────────────────────────────────
+    The pipeline performs:
+    1. Loading and cleaning core TMDB data.
+    2. Joining supplemental financial and status data from Kaggle.
+    3. Mapping director IDs from the local database.
+    4. Enforcing strict data types and string length constraints for SQL safety.
+
+    Returns:
+        pd.DataFrame: A unified DataFrame ready for final storage.
+    """
+    # -- 1. TMDB: Core dataset --
     print("Lecture TMDB : %s", Config.INPUT_CSV_TMDB)
     tmdb = pd.read_csv(
         Config.INPUT_CSV_TMDB,
@@ -47,10 +58,11 @@ def build_films() -> pd.DataFrame:
         low_memory=False,
     )
     tmdb = tmdb.rename(columns={"imdb_id_fetched": "imdb_id"})
+    # Coerce to numeric then nullable Int64 to avoid float conversion
     tmdb["tmdb_id"] = pd.to_numeric(tmdb["tmdb_id"], errors="coerce").astype("Int64")
     tmdb = tmdb.dropna(subset=["tmdb_id"])
 
-    # ── 2. KAGGLE — colonnes complémentaires ──────────────────────────────────
+    # -- 2. KAGGLE: Supplementary columns --
     print("Lecture Kaggle : %s", Config.INPUT_CSV_KAGGLE)
     kaggle = pd.read_csv(
         Config.INPUT_CSV_KAGGLE,
@@ -71,13 +83,11 @@ def build_films() -> pd.DataFrame:
     kaggle["tmdb_id"] = pd.to_numeric(kaggle["tmdb_id"], errors="coerce").astype(
         "Int64"
     )
-
-    # id_collection : float → Int64 nullable
     kaggle["id_collection"] = pd.to_numeric(
         kaggle["id_collection"], errors="coerce"
     ).astype("Int64")
 
-    # ── 3. DB — director_id ───────────────────────────────────────────────────
+    # -- 3. DB: Director mapping --
     print("Lecture DB : %s", Config.INPUT_CSV_DB)
     db = pd.read_csv(
         Config.INPUT_CSV_DB,
@@ -91,11 +101,12 @@ def build_films() -> pd.DataFrame:
         "Int64"
     )
 
-    # ── 4. Fusion ─────────────────────────────────────────────────────────────
+    # -- 4. Multi-source Merge --
+    # Left joins to preserve TMDB as the primary source of truth
     df = tmdb.merge(kaggle, on="tmdb_id", how="left")
     df = df.merge(db, on="tmdb_id", how="left")
 
-    # ── 5. Nettoyage & typage ─────────────────────────────────────────────────
+    # -- 5. Data Normalization & Formatting --
     df = df.dropna(subset=["title"])
 
     df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce").dt.date
@@ -111,7 +122,7 @@ def build_films() -> pd.DataFrame:
     df["tagline"] = df["tagline"].str.strip().str[:260]
     df["poster_path"] = df["poster_path"].str.strip().str[:65]
 
-    # ── 6. Ordre des colonnes ─────────────────────────────────────────────────
+    # -- 6. Column Ordering --
     df = df[
         [
             "tmdb_id",

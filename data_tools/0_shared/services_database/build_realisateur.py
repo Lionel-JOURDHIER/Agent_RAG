@@ -12,19 +12,33 @@ from config import Config
 
 
 def build() -> pd.DataFrame:
+    """
+    Extracts unique directors from the database source and creates a reference table.
+
+    This function ensures that each director is represented only once,
+    normalizes their names, and casts IDs to integers for database consistency.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing unique 'director_id' and 'name'.
+    """
+    # 0. Load raw data with specific columns
     print("Lecture : %s", Config.INPUT_CSV_DB)
     df = pd.read_csv(
         Config.INPUT_CSV_DB, usecols=["director_id", "name"], low_memory=False
     )
 
-    # Un réalisateur peut apparaître sur plusieurs films → déduplication
+    # 1. Deduplication: A director may appear multiple times in the film list
     df = df.drop_duplicates(subset=["director_id"]).reset_index(drop=True)
 
+    # 2. Type Casting and String Normalization
+    # Cast to int to remove decimal points from ID
     df["director_id"] = df["director_id"].astype(int)
     df["name"] = df["name"].str.strip().str[:50]
 
+    # 3. Final Selection
     df = df[["director_id", "name"]]
 
+    # 4. Export to CSV
     df.to_csv(Config.CSV_REALISATEURS, index=False, encoding="utf-8")
     print("Export → %s (%d lignes)", Config.CSV_REALISATEURS, len(df))
     return df

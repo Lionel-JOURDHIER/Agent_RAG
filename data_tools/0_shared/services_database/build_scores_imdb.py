@@ -15,6 +15,16 @@ from config import Config
 
 
 def build_scores_imdb() -> pd.DataFrame:
+    """
+    Extracts and normalizes IMDb ratings and vote counts into a dedicated scores table.
+
+    The function enforces numeric data types and string length constraints to ensure
+    compatibility with a database schema (e.g., DECIMAL for ratings, INT for votes).
+
+    Returns:
+        pd.DataFrame: A DataFrame with columns [tconst, title, average_rating, num_votes].
+    """
+    # 0. Ingestion des données IMDb
     print("Lecture : %s", Config.INPUT_CSV_IMDB)
     df = pd.read_csv(
         Config.INPUT_CSV_IMDB,
@@ -27,19 +37,20 @@ def build_scores_imdb() -> pd.DataFrame:
         low_memory=False,
     )
 
+    # 1. Nettoyage : On ne garde que les films ayant au moins une info de score
     df = df.dropna(subset=["averageRating", "numVotes"], how="all")
 
-    # Nettoyage et limites VARCHAR (selon ton docstring)
+    # 2. Normalisation des chaînes (Protection VARCHAR))
     df["tconst"] = df["tconst"].str.strip().str[:10]
     df["title"] = df["title"].str.strip().str[:150]
 
-    # averageRating doit rester un float pour le DECIMAL(3,1)
+    # 3. Conversion Numérique
+    # averageRating -> float (ex: 7.5)
     df["averageRating"] = pd.to_numeric(df["averageRating"], errors="coerce")
-
-    # numVotes peut être un Int64 (nullable)
+    # numVotes -> Int64 nullable (évite les .0 des floats classiques)
     df["numVotes"] = pd.to_numeric(df["numVotes"], errors="coerce").astype("Int64")
 
-    # Renommage pour coller exactement au docstring / BDD
+    # 4. Renommage et sélection finale selon le schéma cible
     df = df.rename(columns={"averageRating": "average_rating", "numVotes": "num_votes"})
 
     df = df[
@@ -51,6 +62,7 @@ def build_scores_imdb() -> pd.DataFrame:
         ]
     ]
 
+    # 5. Export CSV
     df.to_csv(Config.CSV_SCORES_IMDB, index=False, encoding="utf-8")
     print("Export → %s (%d lignes)", Config.CSV_SCORES_IMDB, len(df))
     return df
