@@ -11,5 +11,7 @@
 **/__pycache__/
 **/*.pyc
 **/.env
-**/data/
+**/data/raw/
 **/data/output/
+**/*.tsv.gz
+data_temp.parquet/

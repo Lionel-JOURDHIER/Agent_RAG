@@ -1,6 +1,15 @@
 # HorRAGor
 
 ## Installation
+### Création des environnement et uv 
+```bash
+(cd data_tools/0_shared  && uv sync)
+(cd data_tools/1_web_scrapping  && uv sync)
+(cd data_tools/2_api_externe  && uv sync)
+(cd data_tools/3_loal_files  && uv sync)
+(cd data_tools/4_database  && uv sync)
+(cd data_tools/5_big_data  && uv sync)
+```
 
 ## 1_web_scrapping : 
 ### Collecte des ficher .xml listant tout le site Rotten_tomatoes : 
@@ -62,36 +71,69 @@ depuis la racine du projet, exécuter :
 cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_tmdb.csv`
 
 ### Suppression des doublons
+Suppression des doublons dans le fichier CSV.
 ```bash
 (cd data_tools/2_api_externe && uv run src/dedup.py)
 ```
 
 ### Extraction de l'ID IMDB
+Extraction de l'ID IMDB depuis l'API pour augmenter la précision des données. 
 ```bash
 (cd data_tools/2_api_externe && uv run src/imdb.py)
 ```
 
 ## 3_local_files : 
-### suppression des doublons des films d'horreurs dans un fichier CSV.
+### Suppression des doublons
+Suppression des doublons dans le fichier CSV.
 ```bash
 (cd data_tools/3_local_files && uv run src/dedup.py)
 ```
 cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_kaggle.csv`
 
-### export de la table csv avec les bonnes tables.
+### Selection des informations pertinantes
+Choix des colonnes pertinentes pour l'analyse des données. 
 ```bash
 (cd data_tools/3_local_files && uv run src/processor.py)
 ```
 cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_kaggle.csv`
 
 ## 4_database : 
+### Extraction des données depuis la base de données
+Extraction complète de la table movies de la base de donnée en intégrant le nom du réalisateur.
 ```bash
 (cd data_tools/4_database && uv run src/db.py)
 ```
 cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_database.csv`
 
 ## 5_big_data : 
+recupération d'information depuis les fichier developpeur big_data de IMDB, 
+on utilise le dataset "title.ratings.tsv" et "title.basics.tsv" qui contient des informations sur les films et les ratings
 ```bash
 (cd data_tools/5_big_data && uv run src/extraction.py)
 ```
 cela génèrera un fichier : `./data_tools/0_shared/data/horror_movies_imdb_scores.csv`
+
+## Synthèse des données et architecture de la base de donnée. 
+### 0_shared/data : 
+Ce dossier contient l'ensemble des fichiers CSV générés par les scripts précédents.
+
+### Netoyage et uniformaistion des données :
+#### Fichier Rottentomatoes : 
+Nettoyage du fichier horror_movies_rt_scores_raw.csv selon les règles suivantes :
+
+  1. Doublons exacts (url_rotten ou title+year)  : suppression
+  2. Lignes sans title ET sans year              : suppression
+  3. rt_tomatometer zéros                        : conservés (0% valide sur RT)
+  4. rt_audience_score zéros                     : conservés (0% valide sur RT)
+  5. year float64                                : → Int64 (entier nullable)
+  6. id_tertiaire                                : slug(title)_year en première colonne
+
+On execute ce nettoyage avec le script `rt_cleaner.py`.
+```bash
+(cd data_tools/0_shared/services/rt_cleaner.py)
+```
+
+
+
+### Services de traitement des données : 
+Pour pouvoir regrouper les différents csv, on uttilise un prétraitement des données pour pouvoir comparer les données. 
