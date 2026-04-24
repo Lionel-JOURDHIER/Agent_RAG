@@ -36,4 +36,4 @@ def run_deduplication(path):
 
 if __name__ == "__main__":  # pragma: no cover
     # Execute deduplication on the output path defined in the global config
-    run_deduplication(Config.OUTPUT_PATH)
+    run_deduplication(Config.TEMP_PATH)

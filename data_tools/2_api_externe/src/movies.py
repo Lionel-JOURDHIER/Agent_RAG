@@ -140,6 +140,7 @@ def extract_row(movie: dict, genre_map: dict[int, str]) -> dict:
         "overview": movie.get("overview", ""),
         "release_date": movie.get("release_date"),
         "vote_average": movie.get("vote_average", ""),
+        "vote_count": movie.get("vote_count", ""),
         "popularity": movie.get("popularity", ""),
         # Ternary logic for conditional URL construction
         "poster_path": (

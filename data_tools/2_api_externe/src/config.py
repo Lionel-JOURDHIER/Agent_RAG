@@ -30,11 +30,12 @@ class Config:
     # Data Schema Definition
     CSV_COLUMNS: list[str] = [
         "tmdb_id",
-        "imdb_id",
+        "imdb_id_fetched",
         "title",
         "overview",
         "release_date",
         "vote_average",
+        "vote_count",
         "popularity",
         "poster_path",
         "genres",
