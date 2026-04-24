@@ -6,9 +6,9 @@ Note : le CSV genres.csv ne contient pas id_genre — il sera généré
        automatiquement à l'ingestion (range 1-19, cohérent avec film_genres.csv).
 """
 
-from base import Base
 from sqlalchemy import Column, SmallInteger, String
 from sqlalchemy.orm import relationship
+from tables.base import Base
 
 
 class Genre(Base):

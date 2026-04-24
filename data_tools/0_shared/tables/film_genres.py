@@ -5,9 +5,9 @@ Table d'association FILMS ↔ GENRES (relation N-N).
 PK surrogate id_film_genre (INT AUTO_INCREMENT).
 """
 
-from base import Base
 from sqlalchemy import Column, ForeignKey, Integer, SmallInteger
 from sqlalchemy.orm import relationship
+from tables.base import Base
 
 
 class FilmGenre(Base):

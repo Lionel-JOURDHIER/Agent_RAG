@@ -4,9 +4,9 @@ models/scores_imdb.py
 PK : director_id (INT) — identifiant natif TMDB, pas d'AUTO_INCREMENT.
 """
 
-from base import Base
 from sqlalchemy import DECIMAL, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+from tables.base import Base
 
 
 class ScoreImdb(Base):
@@ -33,7 +33,9 @@ class ScoreImdb(Base):
     # FK to Film table (tconst)
     # nullable=False: Every score record MUST be linked to a film
     # unique=True: Ensures 1:1 relationship (one score per film)
-    tconst = Column(String(10), ForeignKey("films.tconst"), nullable=False, unique=True)
+    tconst = Column(
+        String(10), ForeignKey("films.imdb_id"), nullable=False, unique=True
+    )
 
     title = Column(String(150))
     average_rating = Column(DECIMAL(3, 1))

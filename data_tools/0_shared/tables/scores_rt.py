@@ -4,9 +4,9 @@ models/scores_imdb.py
 PK : director_id (INT) — identifiant natif TMDB, pas d'AUTO_INCREMENT.
 """
 
-from base import Base
 from sqlalchemy import Column, ForeignKey, Integer, SmallInteger, String
 from sqlalchemy.orm import relationship
+from tables.base import Base
 
 
 class ScoreRt(Base):

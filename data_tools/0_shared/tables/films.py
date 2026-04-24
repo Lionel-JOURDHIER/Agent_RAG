@@ -6,7 +6,6 @@ Relations 1-1 vers scores_tmdb, scores_imdb, scores_rt.
 Relation N-N vers genres via film_genres.
 """
 
-from base import Base
 from sqlalchemy import (
     BigInteger,
     Column,
@@ -18,6 +17,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.orm import relationship
+from tables.base import Base
 
 
 class Film(Base):

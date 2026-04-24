@@ -4,9 +4,9 @@ models/realisateurs.py
 PK : director_id (INT) — identifiant natif TMDB, pas d'AUTO_INCREMENT.
 """
 
-from base import Base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
+from tables.base import Base
 
 
 class Realisateur(Base):
