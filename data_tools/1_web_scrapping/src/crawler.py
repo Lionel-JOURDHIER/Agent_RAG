@@ -129,12 +129,12 @@ if __name__ == "__main__":  # pragma: no cover
 
     # 2. Resumption Logic: Check progress to avoid redundant work
     done_urls = set()
-    file_exists = os.path.exists(Config.OUTPUT_CSV)
+    file_exists = os.path.exists(Config.RAW_CSV)
 
     if file_exists:
         try:
             # Read existing output to identify completed URLs
-            done_df = pl.read_csv(Config.OUTPUT_CSV)
+            done_df = pl.read_csv(Config.RAW_CSV)
             if "url_rotten" in done_df.columns:
                 done_urls = set(done_df["url_rotten"].to_list())
                 print(f"🔄 Reprise : {len(done_urls)} URLs déjà traitées.")
@@ -153,7 +153,7 @@ if __name__ == "__main__":  # pragma: no cover
     with requests.Session() as session:
         # Open file in append mode to protect existing data
         with open(
-            Config.OUTPUT_CSV,
+            Config.RAW_CSV,
             "a",
             newline="",
             encoding="utf-8",
@@ -161,7 +161,7 @@ if __name__ == "__main__":  # pragma: no cover
             writer = csv.DictWriter(f, fieldnames=Config.RT_COLUMNS)
 
             # Write header only for new files or empty files
-            if not file_exists or os.stat(Config.OUTPUT_CSV).st_size == 0:
+            if not file_exists or os.stat(Config.RAW_CSV).st_size == 0:
                 writer.writeheader()
 
             for i, url in enumerate(urls_to_process, start=1):
@@ -180,4 +180,4 @@ if __name__ == "__main__":  # pragma: no cover
                 if i % 10 == 0:
                     time.sleep(1)
 
-    print(f"\n✨ Terminé ! Données sauvegardées dans {Config.OUTPUT_CSV}")
+    print(f"\n✨ Terminé ! Données sauvegardées dans {Config.RAW_CSV}")

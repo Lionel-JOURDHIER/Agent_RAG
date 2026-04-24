@@ -30,6 +30,9 @@ def slugify(title: str) -> str:
     # Replace any sequence of non-alphanumeric characters with a single underscore
     title = re.sub(r"[^a-z0-9]+", "_", title)
 
+    # Replace double "__" in "_" :
+    title = re.sub(r"_{2,}", "_", title)
+
     # Strip underscores from both ends
     return title.strip("_")
 
