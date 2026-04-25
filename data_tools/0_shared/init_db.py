@@ -9,6 +9,7 @@ Supporte :
 
 from __future__ import annotations
 
+from config import Config_bdd
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -55,3 +56,12 @@ def init_db(database_url: str, echo: bool = False) -> Engine:
     engine = get_engine(database_url, echo=echo)
     Base.metadata.create_all(engine)
     return engine
+
+
+if __name__ == "__main__":
+    print("Initialisation de la base de données...")
+
+    # On appelle init_db qui exécute Base.metadata.create_all(engine)
+    engine = init_db(Config_bdd.DATABASE_URL, echo=True)
+
+    print(f"Base de données générée avec succès : {Config_bdd.DATABASE_URL}")

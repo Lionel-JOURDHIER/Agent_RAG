@@ -353,21 +353,38 @@ Le projet est structuré en tables :
 - `scores_tmdb` : contient les scores TMDB des films
 - `film_genres` : contient les relations entre les genres et les films
 
-### Creation de la base de donnée sqlite : 
+### Creation de la base de donnée : 
 Dans le cadre de la création de la base de données, nous avons utilisé SQLite pour un premier test de stockage des données. 
 Cela permet d'avoir une vision directe des defauts éventuels d'intégration de la bdd. 
 
-On execute la création avec le script `db_sqlite.py`.
+Pour changer le type de base de données il faut changer le paramètre DATABASE_URL dans le fichier 0_shared/config
+Ce paramètre fait partie de la classe Config_bdd qui est une classe de configuration.
+
+ci joint des exemples pour différentes base de données : 
+```python 
+DATABASE_URL = "sqlite:///sqlite/horror_db.sqlite"
+DATABASE_URL = "postgresql://username:password@localhost/dbname"
+DATABASE_URL = "mysql://username:password@localhost
+```
+
+On execute la création avec le script `init_db.py`.
 ```bash
-(cd data_tools/0_shared/ && uv run db_sqlite.py)
+(cd data_tools/0_shared/ && uv run init_db.py)
 ```
 
 cela génèrera un fichier : `./data_tools/0_shared/sqlite/horror_db.sqlite`
 
-### Ingestion des données de la table films : 
-Pour faire l'ingestion des données dans la table films, nous avons utilisé le script `ingest_films.py`.
+### Ingestion des données de l'ensemble de la base de donnée : 
+Pour faire l'ingestion des données dans l'ensemble de la base de données `ingest_db.py`.
 
 ```bash
-(cd data_tools/0_shared/ && uv run services_database/ingest_films.py)
+(cd data_tools/0_shared/ && uv run ingest_db.py)
 ```
-la table films est alors mise à jour dans la base de donnée. 
+Ce fichier regroupe les pipelines intégrés aux fichiers : 
+- `services_database.ingest_collection.py`
+- `services_database.ingest_genre.py`
+- `services_database.ingest_films.py`
+- `services_database.ingest_realisateur.py`
+- `services_database.ingest_scores_imdb.py`
+- `services_database.ingest_scores_rt.py`
+- `services_database.ingest_scores_tmdb`

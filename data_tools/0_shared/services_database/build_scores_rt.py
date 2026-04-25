@@ -72,6 +72,17 @@ def build_scores_rt() -> pd.DataFrame:
         df["rt_audience_score"], errors="coerce"
     ).astype("Int64")
 
+    # TODO
+    df = df.replace({"NOT_FOUND": None, "": None, "N/A": None})
+    mask_tert = df["id_tertiaire"].notna()
+    df_with_tert = df[mask_tert].drop_duplicates(subset=["id_tertiaire"], keep="first")
+    df_without_tert = df[~mask_tert]
+    df = pd.concat([df_with_tert, df_without_tert], ignore_index=True)
+
+    # Après
+    df = df.dropna(subset=["id_tertiaire"])
+    df = df.drop_duplicates(subset=["id_tertiaire"], keep="first")
+
     # 4. Final selection and ordering
     df = df[
         [
