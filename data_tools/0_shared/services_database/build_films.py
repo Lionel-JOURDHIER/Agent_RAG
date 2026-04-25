@@ -25,9 +25,16 @@ Sortie : data/scores_tmdb.csv
     revenue (BIGINT),
 """
 
+import sys
+from pathlib import Path
+
 import pandas as pd
-from config import Config
-from export import export_to_csv
+
+# Ajoute 0_shared/ au path pour trouver init_db, config, tables/
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from services_database.config import Config
+from services_database.export import export_to_csv
 
 
 def build_films() -> pd.DataFrame:
