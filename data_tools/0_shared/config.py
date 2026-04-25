@@ -14,7 +14,7 @@ class Config_bdd:
     DATABASE_URL = (
         f"postgresql+psycopg2://{os.getenv('SUPABASE_USER')}:{os.getenv('SUPABASE_PASSWORD')}"
         f"@{os.getenv('SUPABASE_HOST')}:{os.getenv('SUPABASE_PORT')}/{os.getenv('SUPABASE_DB')}"
-        f"?sslmode=require"  # ← sslmode reste dans l'URL, c'est un param psycopg2
+        f"?sslmode=require"
     )
 
 

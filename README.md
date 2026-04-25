@@ -362,9 +362,20 @@ Ce paramètre fait partie de la classe Config_bdd qui est une classe de configur
 
 ci joint des exemples pour différentes base de données : 
 ```python 
+# SQLITE
 DATABASE_URL = "sqlite:///sqlite/horror_db.sqlite"
-DATABASE_URL = "postgresql://username:password@localhost/dbname"
-DATABASE_URL = "mysql://username:password@localhost
+# POSTGRES DOCKER
+DATABASE_URL = (
+    f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}"
+    f"@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
+)
+# POSTGRES SUPABASE
+DATABASE_URL = (
+        f"postgresql+psycopg2://{os.getenv('SUPABASE_USER')}:{os.getenv('SUPABASE_PASSWORD')}"
+        f"@{os.getenv('SUPABASE_HOST')}:{os.getenv('SUPABASE_PORT')}/{os.getenv('SUPABASE_DB')}"
+        f"?sslmode=require" 
+    )
+
 ```
 
 On execute la création avec le script `init_db.py`.
