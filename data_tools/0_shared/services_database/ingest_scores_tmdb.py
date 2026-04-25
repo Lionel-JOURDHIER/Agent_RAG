@@ -9,36 +9,52 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import Config_bdd
 from init_db import get_engine, get_session_factory
 from services_database.build_scores_tmdb import build_scores_tmdb
+from tables.films import Film
 from tables.scores_tmdb import ScoreTmdb
 
 
 def ingest_scores_tmdb_pipeline():
-    # 1. Générer le DataFrame nettoyé
+    """
+    Executes the ETL pipeline for TMDB scores, including referential integrity
+    checks against the Film table and record deduplication.
+
+    Returns:
+        pd.DataFrame: The final processed DataFrame after filtering.
+    """
+    # 1. Generate the cleaned source DataFrame
     df = build_scores_tmdb()
 
-    # --- CRITIQUE: Conversion pour SQLAlchemy ---
-    # Remplace les types Pandas (pd.NA) par des types Python standard (None)
-    # Sinon, SQLAlchemy risque de lever une erreur sur les entiers nullables.
+    # --- CRITIQUE: SQLAlchemy Conversion ---
+    # Convert Pandas-specific NA values to standard Python 'None' objects.
+    # This avoids issues with SQLAlchemy's handling of nullable integer/float types.
     df = df.astype(object).where(pd.notnull(df), None)
 
+    # Initialize Database connection components
     engine = get_engine(Config_bdd.DATABASE_URL)
     SessionFactory = get_session_factory(engine)
 
-    # 3. Insertion
+    # Data Insertion Phase
     with SessionFactory() as session:
         try:
             print(f"Début de l'insertion dans {Config_bdd.DATABASE_URL}...")
 
-            # 1. Récupérer tous les genres déjà présents pour éviter des requêtes SQL en boucle
+            # Fetch valid TMDB IDs from the Film table to enforce referential integrity
+            valid_tmdb = {r[0] for r in session.query(Film.tmdb_id).all()}
+
+            # Keep only rows where the movie exists in the main Film table
+            df = df[df["tmdb_id"].isin(valid_tmdb)]
+
+            # Fetch existing records in ScoreTmdb to avoid primary key/unique constraint violations
             existing_id_score_tmdb = {
                 g.tmdb_id for g in session.query(ScoreTmdb.tmdb_id).all()
             }
 
             count_added = 0
+            # Iterate through rows for individual record processing
             for _, row in df.iterrows():
                 tmdb_id = row["tmdb_id"]
 
-                # 2. On n'ajoute que si le nom n'est pas déjà dans la base
+                # Deduplication check: process only if ID is new
                 if tmdb_id not in existing_id_score_tmdb:
                     new_score_tmdb = ScoreTmdb(
                         tmdb_id=row["tmdb_id"],
@@ -47,17 +63,19 @@ def ingest_scores_tmdb_pipeline():
                         popularity=row["popularity"],
                     )
                     session.add(new_score_tmdb)
-                    existing_id_score_tmdb.add(
-                        tmdb_id
-                    )  # On l'ajoute au set pour éviter les doublons dans le CSV lui-même
+
+                    # Track added ID to handle duplicate rows within the source DataFrame
+                    existing_id_score_tmdb.add(tmdb_id)
                     count_added += 1
 
+            # Commit transaction to the database
             session.commit()
             print(
                 f"✅ Migration terminée : {count_added} nouveaux scores_tmdb importées."
             )
 
         except Exception as e:
+            # Rollback changes on failure to maintain consistency
             session.rollback()
             print(f"❌ Erreur lors de l'ingestion : {e}")
     return df

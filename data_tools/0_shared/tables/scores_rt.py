@@ -4,7 +4,7 @@ models/scores_imdb.py
 PK : director_id (INT) — identifiant natif TMDB, pas d'AUTO_INCREMENT.
 """
 
-from sqlalchemy import Column, ForeignKey, Integer, SmallInteger, String
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from tables.base import Base
 
@@ -42,8 +42,8 @@ class ScoreRt(Base):
     url_rotten = Column(String(120), unique=True, nullable=True)
 
     # SmallInteger is sufficient for scores ranging from 0 to 100
-    rt_tomatometer = Column(SmallInteger)
-    rt_audience_score = Column(SmallInteger)
+    rt_tomatometer = Column(Integer)
+    rt_audience_score = Column(Integer)
 
     # Critics consensus (VARCHAR 285 based on technical specs)
     rt_critics_consensus = Column(String(285))

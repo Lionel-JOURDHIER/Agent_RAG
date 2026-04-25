@@ -9,36 +9,59 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import Config_bdd
 from init_db import get_engine, get_session_factory
 from services_database.build_scores_imdb import build_scores_imdb
+from tables.films import Film
 from tables.scores_imdb import ScoreImdb
 
 
 def ingest_scores_imdb_pipeline():
-    # 1. Générer le DataFrame nettoyé
+    """
+    Orchestrates the ingestion of IMDb scores into the database.
+
+    This function performs data cleaning, validates foreign key integrity against
+    the Film table, and performs deduplicated insertion.
+
+    Returns:
+        pd.DataFrame: The cleaned and filtered DataFrame used for the ingestion.
+    """
+    # 1. Generate the cleaned DataFrame
     df = build_scores_imdb()
 
-    # --- CRITIQUE: Conversion pour SQLAlchemy ---
-    # Remplace les types Pandas (pd.NA) par des types Python standard (None)
-    # Sinon, SQLAlchemy risque de lever une erreur sur les entiers nullables.
+    # --- CRITIQUE: SQLAlchemy Conversion ---
+    # Convert Pandas-specific types to standard Python objects to ensure
+    # compatibility with SQLAlchemy's type handling (especially for nulls).
     df = df.astype(object).where(pd.notnull(df), None)
 
+    # Initialize DB connection components
     engine = get_engine(Config_bdd.DATABASE_URL)
     SessionFactory = get_session_factory(engine)
 
-    # 3. Insertion
+    # Insertion Process
     with SessionFactory() as session:
         try:
             print(f"Début de l'insertion dans {Config_bdd.DATABASE_URL}...")
 
-            # 1. Récupérer tous les genres déjà présents pour éviter des requêtes SQL en boucle
+            # --- Integrity Check: Filter out orphaned records ---
+            # Fetch valid IMDb IDs from the Film table to ensure referential integrity
+            valid_imdb = {r[0] for r in session.query(Film.imdb_id).all()}
+            orphans = df[~df["tconst"].isin(valid_imdb)]
+            if not orphans.empty:
+                print(f"⚠️  {len(orphans)} lignes ignorées (tconst absent de films)")
+
+            # Only keep rows that have a corresponding entry in the Film table
+            df = df[df["tconst"].isin(valid_imdb)]
+
+            # --- Deduplication: Fetch existing scores ---
             existing_id_score_imdb = {
                 g.tconst for g in session.query(ScoreImdb.tconst).all()
             }
 
             count_added = 0
+
+            # Iterate through rows to perform conditional insertion
             for _, row in df.iterrows():
                 tconst = row["tconst"]
 
-                # 2. On n'ajoute que si le nom n'est pas déjà dans la base
+                # Add record only if not already present in DB or processed in current batch
                 if tconst not in existing_id_score_imdb:
                     new_score_imdb = ScoreImdb(
                         tconst=row["tconst"],
@@ -47,17 +70,19 @@ def ingest_scores_imdb_pipeline():
                         num_votes=row["num_votes"],
                     )
                     session.add(new_score_imdb)
-                    existing_id_score_imdb.add(
-                        tconst
-                    )  # On l'ajoute au set pour éviter les doublons dans le CSV lui-même
+
+                    # Track newly added ID to prevent duplicates within the same source
+                    existing_id_score_imdb.add(tconst)
                     count_added += 1
 
+            # Commit the transaction to the database
             session.commit()
             print(
                 f"✅ Migration terminée : {count_added} nouveaux scores_imdb importées."
             )
 
         except Exception as e:
+            # Revert all changes in this session if any error occurs
             session.rollback()
             print(f"❌ Erreur lors de l'ingestion : {e}")
     return df

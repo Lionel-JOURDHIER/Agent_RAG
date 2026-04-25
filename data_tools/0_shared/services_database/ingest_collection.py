@@ -13,50 +13,63 @@ from tables.collections import Collection
 
 
 def ingest_collection_pipeline():
-    # 1. Générer le DataFrame nettoyé
+    """
+    Orchestrates the data ingestion pipeline for movie collections.
+
+    Loads cleaned data from build_collections(), converts types for SQLAlchemy compatibility,
+    and performs a bulk-check insertion to add only new collections to the database.
+
+    Returns:
+        pd.DataFrame: The processed DataFrame used for ingestion.
+    """
+    # 1. Generate the cleaned DataFrame from source
     df = build_collections()
 
-    # --- CRITIQUE: Conversion pour SQLAlchemy ---
-    # Remplace les types Pandas (pd.NA) par des types Python standard (None)
-    # Sinon, SQLAlchemy risque de lever une erreur sur les entiers nullables.
+    # --- CRITICAL: SQLAlchemy Compatibility ---
+    # Convert Pandas-specific types (pd.NA, NaN) to standard Python types (None)
+    # This prevents SQLAlchemy from raising errors on nullable integer types.
     df = df.astype(object).where(pd.notnull(df), None)
 
     engine = get_engine(Config_bdd.DATABASE_URL)
     SessionFactory = get_session_factory(engine)
 
-    # 3. Insertion
+    # 3. Database Insertion Process
     with SessionFactory() as session:
         try:
             print(f"Début de l'insertion dans {Config_bdd.DATABASE_URL}...")
 
-            # 1. Récupérer tous les genres déjà présents pour éviter des requêtes SQL en boucle
+            # 1. Pre-fetch existing IDs to avoid redundant SQL queries inside the loop
+            # Using a set for O(1) lookup performance
             existing_collection_id = {
                 g.tmdb_collection_id
                 for g in session.query(Collection.tmdb_collection_id).all()
             }
 
             count_added = 0
+
+            # Iterate through DataFrame rows
             for _, row in df.iterrows():
                 tmdb_collection_id = row["tmdb_collection_id"]
 
                 # 2. On n'ajoute que si le nom n'est pas déjà dans la base
                 if tmdb_collection_id not in existing_collection_id:
+                    # 2. Add only if the ID is not already present in the database or current batch
                     new_genre = Collection(
                         tmdb_collection_id=tmdb_collection_id,
                         collection_name=row["collection_name"],
                     )
                     session.add(new_genre)
-                    existing_collection_id.add(
-                        tmdb_collection_id
-                    )  # On l'ajoute au set pour éviter les doublons dans le CSV lui-même
+                    # Update the local cache to handle duplicates within the source CSV
+                    existing_collection_id.add(tmdb_collection_id)
                     count_added += 1
-
+            # Commit the entire transaction
             session.commit()
             print(
                 f"✅ Migration terminée : {count_added} nouvelles collections importées."
             )
 
         except Exception as e:
+            # Rollback in case of any failure to maintain data integrity
             session.rollback()
             print(f"❌ Erreur lors de l'ingestion : {e}")
     return df

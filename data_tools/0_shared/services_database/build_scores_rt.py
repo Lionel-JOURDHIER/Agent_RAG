@@ -65,25 +65,41 @@ def build_scores_rt() -> pd.DataFrame:
     df["rt_critics_consensus"] = df["rt_critics_consensus"].str.strip().str[:285]
 
     # 3. Type Conversion: Convert scores to nullable Int64 to preserve NaNs without float conversion
-    df["rt_tomatometer"] = pd.to_numeric(df["rt_tomatometer"], errors="coerce").astype(
-        "Int64"
+    df["rt_tomatometer"] = pd.to_numeric(df["rt_tomatometer"], errors="coerce").clip(
+        0, 100
     )
     df["rt_audience_score"] = pd.to_numeric(
         df["rt_audience_score"], errors="coerce"
-    ).astype("Int64")
+    ).clip(0, 100)
 
-    # TODO
-    df = df.replace({"NOT_FOUND": None, "": None, "N/A": None})
-    mask_tert = df["id_tertiaire"].notna()
-    df_with_tert = df[mask_tert].drop_duplicates(subset=["id_tertiaire"], keep="first")
-    df_without_tert = df[~mask_tert]
-    df = pd.concat([df_with_tert, df_without_tert], ignore_index=True)
+    # 4. Custom Conversion: Ensure native Python types (int/str or None) instead of NumPy/Pandas types
+    def to_int_or_none(x):
+        """Helper to convert scalar to native int or None."""
+        try:
+            if pd.isna(x):
+                return None
+            return int(x)
+        except (TypeError, ValueError):
+            return None
 
-    # Après
+    def to_str_or_none(x):
+        """Helper to convert scalar to native string or None if empty."""
+        if x is None or (isinstance(x, float) and pd.isna(x)):
+            return None
+        return str(x)
+
+    # Apply conversions across specific columns
+    df["rt_tomatometer"] = df["rt_tomatometer"].apply(to_int_or_none)
+    df["rt_audience_score"] = df["rt_audience_score"].apply(to_int_or_none)
+    df["id_tertiaire"] = df["id_tertiaire"].apply(to_str_or_none)
+    df["url_rotten"] = df["url_rotten"].apply(to_str_or_none)
+    df["rt_critics_consensus"] = df["rt_critics_consensus"].apply(to_str_or_none)
+
+    # 5. Final Integrity Checks: Remove null identifiers and duplicates
     df = df.dropna(subset=["id_tertiaire"])
     df = df.drop_duplicates(subset=["id_tertiaire"], keep="first")
 
-    # 4. Final selection and ordering
+    # 6. Final selection and column ordering
     df = df[
         [
             "id_tertiaire",

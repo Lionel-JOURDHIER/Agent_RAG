@@ -13,49 +13,62 @@ from tables.realisateurs import Realisateur
 
 
 def ingest_realisateurs_pipeline():
-    # 1. Générer le DataFrame nettoyé
+    """
+    Orchestrates the ETL process for directors, from DataFrame generation
+    to database insertion with deduplication logic.
+
+    Returns:
+        pd.DataFrame: The processed and cleaned DataFrame used for ingestion.
+
+    Raises:
+        Exception: If database connection or insertion fails, triggering a rollback.
+    """
+    # 1. Generate the cleaned DataFrame
     df = build_realisateurs()
 
-    # --- CRITIQUE: Conversion pour SQLAlchemy ---
-    # Remplace les types Pandas (pd.NA) par des types Python standard (None)
-    # Sinon, SQLAlchemy risque de lever une erreur sur les entiers nullables.
+    # --- CRITIQUE: SQLAlchemy Conversion ---
+    # Convert Pandas-specific NA values (pd.NA) to standard Python None
+    # to prevent SQLAlchemy from raising errors on nullable integer types.
     df = df.astype(object).where(pd.notnull(df), None)
 
+    # Initialize database connection components
     engine = get_engine(Config_bdd.DATABASE_URL)
     SessionFactory = get_session_factory(engine)
 
-    # 3. Insertion
+    # 2. Insertion Phase
     with SessionFactory() as session:
         try:
             print(f"Début de l'insertion dans {Config_bdd.DATABASE_URL}...")
 
-            # 1. Récupérer tous les genres déjà présents pour éviter des requêtes SQL en boucle
+            # Fetch all existing director IDs to prevent N+1 query issues during duplication checks
             existing_director_id = {
                 g.director_id for g in session.query(Realisateur.director_id).all()
             }
 
             count_added = 0
+            # Iterate through DataFrame rows
             for _, row in df.iterrows():
                 director_id = row["director_id"]
 
-                # 2. On n'ajoute que si le nom n'est pas déjà dans la base
+                # Add only if the ID does not exist in the database or the current batch
                 if director_id not in existing_director_id:
                     new_director = Realisateur(
                         director_id=director_id,
                         name=row["name"],
                     )
                     session.add(new_director)
-                    existing_director_id.add(
-                        director_id
-                    )  # On l'ajoute au set pour éviter les doublons dans le CSV lui-même
+                    # Update local set to prevent duplicates within the same CSV/DataFrame batch
+                    existing_director_id.add(director_id)
                     count_added += 1
 
+            # Persist changes to the database
             session.commit()
             print(
                 f"✅ Migration terminée : {count_added} nouveaux réalisateurs importées."
             )
 
         except Exception as e:
+            # Rollback transaction in case of error to maintain data integrity
             session.rollback()
             print(f"❌ Erreur lors de l'ingestion : {e}")
     return df

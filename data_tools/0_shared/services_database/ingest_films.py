@@ -13,30 +13,42 @@ from tables.films import Film
 
 
 def ingest_films_pipeline():
-    # 1. Générer le DataFrame nettoyé
+    """
+    Executes the full ingestion cycle for movie records.
+
+    This function retrieves cleaned film data, ensures SQLAlchemy type compatibility,
+    and performs a filtered bulk insertion to populate the database while avoiding
+    unique constraint violations on 'tmdb_id'.
+
+    Returns:
+        None
+    """
+    # 1. Generate the cleaned DataFrame from the domain logic function
     df = build_films()
 
-    # --- CRITIQUE: Conversion pour SQLAlchemy ---
-    # Remplace les types Pandas (pd.NA) par des types Python standard (None)
-    # Sinon, SQLAlchemy risque de lever une erreur sur les entiers nullables.
+    # --- CRITICAL: SQLAlchemy Compatibility ---
+    # Convert Pandas types (pd.NA/NaN) to standard Python (None)
+    # Necessary for specific database drivers that do not recognize Pandas-specific nulls.
     df = df.astype(object).where(pd.notnull(df), None)
 
+    # Database connection initialization
     engine = get_engine(Config_bdd.DATABASE_URL)
     SessionFactory = get_session_factory(engine)
 
-    # 3. Insertion
+    # 2. Insertion Process
     with SessionFactory() as session:
         try:
             print(f"Début de l'insertion dans {Config_bdd.DATABASE_URL}...")
-            # 1. Récupérer tous les genres déjà présents pour éviter des requêtes SQL en boucle
+            # Pre-fetch existing film IDs to avoid "Select before Insert" N+1 performance issues
             existing_films = {g.tmdb_id for g in session.query(Film.tmdb_id).all()}
 
             count_added = 0
 
+            # Iterate through cleaned data
             for _, row in df.iterrows():
                 tmdb_id = row["tmdb_id"]
 
-                # 2. On n'ajoute que si le nom n'est pas déjà dans la base
+                # Add only if the film is not already present in the database cache
                 if tmdb_id not in existing_films:
                     f = Film(
                         tmdb_id=row["tmdb_id"],
@@ -57,11 +69,16 @@ def ingest_films_pipeline():
                         revenue=row["revenue"],
                     )
                     session.add(f)
+
+                    # Update cache to handle potential duplicates within the source data itself
+                    existing_films.add(tmdb_id)
                     count_added += 1
 
+            # Finalize the transaction
             session.commit()
             print(f"✅ Migration terminée : {count_added} films importés.")
         except Exception as e:
+            # Revert all changes in this session if any error occurs
             session.rollback()
             print(f"❌ Erreur lors de l'ingestion : {e}")
 
