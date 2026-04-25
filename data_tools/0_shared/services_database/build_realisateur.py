@@ -16,7 +16,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from services_database.config import Config
-from services_database.export import export_to_csv
+from services_database.export import export_to_parquet
 
 
 def build_realisateurs() -> pd.DataFrame:
@@ -51,4 +51,4 @@ def build_realisateurs() -> pd.DataFrame:
 
 if __name__ == "__main__":
     df_realisateurs = build_realisateurs()
-    export_to_csv(df_realisateurs, Config.CSV_REALISATEURS)
+    export_to_parquet(df_realisateurs, Config.PARQUET_REALISATEURS)

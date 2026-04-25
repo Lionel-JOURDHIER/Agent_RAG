@@ -22,7 +22,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from services_database.config import Config
-from services_database.export import export_to_csv
+from services_database.export import export_to_parquet
 
 
 def build_genres() -> pd.DataFrame:
@@ -95,5 +95,5 @@ if __name__ == "__main__":
     df_genres, df_final = build_genres()
     df_film_genres = build_filmgenres(df_genres, df_final)
 
-    export_to_csv(df_genres, Config.CSV_GENRES)
-    export_to_csv(df_film_genres, Config.CSV_GENRES)
+    export_to_parquet(df_genres, Config.PARQUET_GENRES)
+    export_to_parquet(df_film_genres, Config.PARQUET_FILMGENRES)

@@ -22,7 +22,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from services_database.config import Config
-from services_database.export import export_to_csv
+from services_database.export import export_to_parquet
 
 
 def build_scores_tmdb() -> pd.DataFrame:
@@ -75,4 +75,4 @@ def build_scores_tmdb() -> pd.DataFrame:
 
 if __name__ == "__main__":
     df_scores_tmdb = build_scores_tmdb()
-    export_to_csv(df_scores_tmdb, Config.CSV_SCORES_TMDB)
+    export_to_parquet(df_scores_tmdb, Config.PARQUET_SCORES_TMDB)

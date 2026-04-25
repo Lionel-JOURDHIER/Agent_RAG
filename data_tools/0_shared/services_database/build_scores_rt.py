@@ -21,7 +21,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from services_database.config import Config
-from services_database.export import export_to_csv
+from services_database.export import export_to_parquet
 
 
 def build_scores_rt() -> pd.DataFrame:
@@ -115,4 +115,4 @@ def build_scores_rt() -> pd.DataFrame:
 
 if __name__ == "__main__":
     df_scores_rt = build_scores_rt()
-    export_to_csv(df_scores_rt, Config.CSV_SCORES_RT)
+    export_to_parquet(df_scores_rt, Config.PARQUET_SCORES_RT)

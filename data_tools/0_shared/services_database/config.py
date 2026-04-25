@@ -13,3 +13,12 @@ class Config:
     CSV_SCORES_IMDB = "data/scores_imdb.csv"
     CSV_SCORES_TMDB = "data/scores_tmdb.csv"
     CSV_FILMGENRES = "data/film_genres.csv"
+
+    PARQUET_COLLECTIONS = "data/collections.parquet"
+    PARQUET_FILMS = "data/films.parquet"
+    PARQUET_GENRES = "data/genres.parquet"
+    PARQUET_REALISATEURS = "data/realisateurs.parquet"
+    PARQUET_SCORES_RT = "data/scores_rt.parquet"
+    PARQUET_SCORES_IMDB = "data/scores_imdb.parquet"
+    PARQUET_SCORES_TMDB = "data/scores_tmdb.parquet"
+    PARQUET_FILMGENRES = "data/film_genres.parquet"
