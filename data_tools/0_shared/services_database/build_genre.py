@@ -16,6 +16,7 @@ import re
 
 import pandas as pd
 from config import Config
+from export import export_to_csv
 
 
 def build_genres() -> pd.DataFrame:
@@ -60,10 +61,6 @@ def build_genres() -> pd.DataFrame:
     df_unique = df_unique.rename(columns={"genre_list": "genre_name"})
     df_unique["genre_name"] = df_unique["genre_name"].str[:50]
 
-    # Export reference table
-    df_unique.to_csv(Config.CSV_GENRES, index=False, encoding="utf-8")
-
-    print(f"Export → {Config.CSV_GENRES} ({len(df_unique)} lignes)")
     return df_unique, df_final
 
 
@@ -84,15 +81,13 @@ def build_filmgenres(df_unique, df_final):
     # 2. Map raw names to numeric IDs in the junction table
     df_film_genres = df_final.copy()
     df_film_genres["id_genre"] = df_film_genres["genre_list"].map(genre_mapping)
-
-    # 3. Final Selection and Export
     df_film_genres = df_film_genres[["tmdb_id", "id_genre"]]
-    df_film_genres.to_csv(Config.CSV_FILMGENRES, index=False)
-
-    print(f"Export → {Config.CSV_FILMGENRES} ({len(df_film_genres)} lignes)")
     return df_film_genres
 
 
 if __name__ == "__main__":
-    df_unique, df_final = build_genres()
-    build_filmgenres(df_unique, df_final)
+    df_genres, df_final = build_genres()
+    df_film_genres = build_filmgenres(df_genres, df_final)
+
+    export_to_csv(df_genres, Config.CSV_GENRES)
+    export_to_csv(df_film_genres, Config.CSV_GENRES)

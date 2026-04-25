@@ -12,6 +12,7 @@ Sortie : data/scores_imdb.csv
 
 import pandas as pd
 from config import Config
+from export import export_to_csv
 
 
 def build_scores_imdb() -> pd.DataFrame:
@@ -62,11 +63,9 @@ def build_scores_imdb() -> pd.DataFrame:
         ]
     ]
 
-    # 5. Export CSV
-    df.to_csv(Config.CSV_SCORES_IMDB, index=False, encoding="utf-8")
-    print("Export → %s (%d lignes)", Config.CSV_SCORES_IMDB, len(df))
     return df
 
 
 if __name__ == "__main__":
-    build_scores_imdb()
+    df_scores_imdb = build_scores_imdb()
+    export_to_csv(df_scores_imdb, Config.CSV_SCORES_IMDB)

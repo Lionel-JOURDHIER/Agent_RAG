@@ -9,9 +9,10 @@ Sortie : data/realisateurs.csv
 
 import pandas as pd
 from config import Config
+from export import export_to_csv
 
 
-def build() -> pd.DataFrame:
+def build_realisateurs() -> pd.DataFrame:
     """
     Extracts unique directors from the database source and creates a reference table.
 
@@ -38,11 +39,9 @@ def build() -> pd.DataFrame:
     # 3. Final Selection
     df = df[["director_id", "name"]]
 
-    # 4. Export to CSV
-    df.to_csv(Config.CSV_REALISATEURS, index=False, encoding="utf-8")
-    print("Export → %s (%d lignes)", Config.CSV_REALISATEURS, len(df))
     return df
 
 
 if __name__ == "__main__":
-    build()
+    df_realisateurs = build_realisateurs()
+    export_to_csv(df_realisateurs, Config.CSV_REALISATEURS)

@@ -10,6 +10,7 @@ Sortie : data/collections.csv
 
 import pandas as pd
 from config import Config
+from export import export_to_csv
 
 
 def build_collections() -> pd.DataFrame:
@@ -46,10 +47,9 @@ def build_collections() -> pd.DataFrame:
     # 4. Final selection
     df = df[["tmdb_collection_id", "collection_name"]]
 
-    df.to_csv(Config.CSV_COLLECTIONS, index=False, encoding="utf-8")
-    print("Export → %s (%d lignes)", Config.CSV_COLLECTIONS, len(df))
     return df
 
 
 if __name__ == "__main__":
-    build_collections()
+    df_collection = build_collections()
+    export_to_csv(df_collection, Config.CSV_COLLECTIONS)

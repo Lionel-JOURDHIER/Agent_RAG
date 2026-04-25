@@ -14,6 +14,7 @@ Sortie : data/scores_rt.csv
 
 import pandas as pd
 from config import Config
+from export import export_to_csv
 
 
 def build_scores_rt() -> pd.DataFrame:
@@ -75,11 +76,9 @@ def build_scores_rt() -> pd.DataFrame:
         ]
     ]
 
-    # 5. Export to CSV
-    df.to_csv(Config.CSV_SCORES_RT, index=False, encoding="utf-8")
-    print("Export → %s (%d lignes)", Config.CSV_SCORES_RT, len(df))
     return df
 
 
 if __name__ == "__main__":
-    build_scores_rt()
+    df_scores_rt = build_scores_rt()
+    export_to_csv(df_scores_rt, Config.CSV_SCORES_RT)

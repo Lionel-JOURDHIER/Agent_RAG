@@ -27,6 +27,7 @@ Sortie : data/scores_tmdb.csv
 
 import pandas as pd
 from config import Config
+from export import export_to_csv
 
 
 def build_films() -> pd.DataFrame:
@@ -153,11 +154,6 @@ def build_films() -> pd.DataFrame:
     return df
 
 
-def export_films(df: pd.DataFrame):
-    df.to_csv(Config.CSV_FILMS, index=False, encoding="utf-8")
-    print("Export → %s (%d lignes)", Config.CSV_FILMS, len(df))
-
-
 if __name__ == "__main__":
     df = build_films()
-    export_films(df)
+    export_to_csv(df, Config.CSV_FILMS)
