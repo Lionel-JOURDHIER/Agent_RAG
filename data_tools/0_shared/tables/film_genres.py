@@ -20,16 +20,16 @@ class FilmGenre(Base):
 
     __tablename__ = "film_genres"
 
-    # Foreign key to Film, part of the composite primary key
-    tmdb_id = Column(
-        Integer, ForeignKey("films.tmdb_id", ondelete="CASCADE"), primary_key=True
-    )
+    # Primary key
+    id_film_genre = Column(Integer, primary_key=True, autoincrement=True)
 
-    # Foreign key to Genre, part of the composite primary key
+    # Foreign key to Film
+    tmdb_id = Column(Integer, ForeignKey("films.tmdb_id", ondelete="CASCADE"))
+
+    # Foreign key to Genre
     id_genre = Column(
         SmallInteger,
         ForeignKey("genres.id_genre", ondelete="CASCADE"),
-        primary_key=True,
         index=True,
     )
 
